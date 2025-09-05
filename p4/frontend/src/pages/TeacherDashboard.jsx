@@ -68,6 +68,8 @@ const TeacherDashboard = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [teacherData, setTeacherData] = useState(null);
   const [editingQuizId, setEditingQuizId] = useState(null);
+  const [selectedQuizResults, setSelectedQuizResults] = useState(null);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -207,6 +209,19 @@ const TeacherDashboard = () => {
     }
   };
 
+  const fetchQuizResults = async (quizId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/quiz/${quizId}/results`);
+      const data = await response.json();
+      if (data.success) {
+        setSelectedQuizResults(data.quiz);
+        setShowSubmissionModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching quiz results:', error);
+    }
+  };
+
   const addQuestion = () => {
     const newQuestion = {
       question: '',
@@ -318,8 +333,8 @@ const TeacherDashboard = () => {
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${activity.type === 'submission' ? 'bg-green-500' :
-                      activity.type === 'message' ? 'bg-blue-500' :
-                        activity.type === 'video' ? 'bg-purple-500' : 'bg-orange-500'
+                    activity.type === 'message' ? 'bg-blue-500' :
+                      activity.type === 'video' ? 'bg-purple-500' : 'bg-orange-500'
                     }`}></div>
                   <span className="text-gray-800">{activity.action}</span>
                 </div>
@@ -568,8 +583,8 @@ const TeacherDashboard = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${status === 'active' ? 'bg-green-100 text-green-800' :
-                          status === 'expired' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
+                        status === 'expired' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
                         }`}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </span>
@@ -597,53 +612,95 @@ const TeacherDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Submissions & Grading</h2>
-        <div className="flex gap-2">
-          <select className="px-4 py-2 border border-gray-300 rounded-lg">
-            <option>All Quizzes</option>
-            <option>Algebra Basics</option>
-            <option>Chemical Reactions</option>
-            <option>World War II</option>
-          </select>
-          <button className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-600">
-            <Download className="w-4 h-4" />
-            Export Results
-          </button>
-        </div>
+        <button onClick={fetchQuizzes} className="text-blue-600 hover:text-blue-800 text-sm">Refresh</button>
       </div>
 
       <div className="bg-white p-6 rounded-xl shadow-lg">
-        <div className="space-y-4">
-          {[
-            { student: 'Alex Johnson', quiz: 'Algebra Basics', submitted: '2 hours ago', score: 95, status: 'graded' },
-            { student: 'Sarah Wilson', quiz: 'Chemical Reactions', submitted: '1 hour ago', score: 88, status: 'graded' },
-            { student: 'Mike Chen', quiz: 'Algebra Basics', submitted: '30 min ago', score: null, status: 'pending' },
-            { student: 'Emma Davis', quiz: 'World War II', submitted: '15 min ago', score: null, status: 'pending' }
-          ].map((submission, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-gray-800">{submission.student}</h4>
-                  <p className="text-gray-600">{submission.quiz}</p>
-                  <p className="text-sm text-gray-500">Submitted: {submission.submitted}</p>
+        {quizzes.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>No quizzes yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {quizzes.map((quiz) => (
+              <div key={quiz._id} className="border border-gray-200 rounded-lg">
+                <div className="p-4 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-gray-800">{quiz.title}</h4>
+                    <p className="text-gray-600">Grade {quiz.grade} • {quiz.subject}</p>
+                  </div>
+                  <div className="text-sm text-gray-600">{quiz.submissions.length} submissions</div>
                 </div>
-                <div className="flex items-center gap-4">
-                  {submission.score !== null ? (
-                    <span className="text-lg font-bold text-green-600">{submission.score}%</span>
-                  ) : (
-                    <span className="text-orange-600 font-medium">Pending</span>
-                  )}
-                  <button className={`px-4 py-2 rounded-lg ${submission.status === 'graded'
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
-                      : 'bg-orange-500 text-white hover:bg-orange-600'
-                    }`}>
-                    {submission.status === 'graded' ? 'View Details' : 'Grade Now'}
-                  </button>
-                </div>
+                {quiz.submissions.length === 0 ? (
+                  <div className="px-4 pb-4 text-sm text-gray-500">No submissions yet.</div>
+                ) : (
+                  <div className="divide-y">
+                    {quiz.submissions.map((sub, idx) => (
+                      <div key={idx} className="px-4 py-3 flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-800">{sub.studentId?.name || 'Student'}</div>
+                          <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()}</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-green-600 font-semibold">{sub.score}%</span>
+                          <button onClick={() => fetchQuizResults(quiz._id)} className="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm">View Details</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {showSubmissionModal && selectedQuizResults && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-xl shadow-xl">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-800">{selectedQuizResults.title} — Submissions</h3>
+                <p className="text-sm text-gray-600">Grade {selectedQuizResults.grade} • {selectedQuizResults.subject}</p>
+              </div>
+              <button onClick={() => { setShowSubmissionModal(false); setSelectedQuizResults(null); }} className="text-gray-600 hover:text-gray-800">Close</button>
+            </div>
+            <div className="p-4 space-y-6">
+              {selectedQuizResults.submissions.length === 0 ? (
+                <div className="text-gray-500">No submissions.</div>
+              ) : (
+                selectedQuizResults.submissions.map((sub, sIdx) => (
+                  <div key={sIdx} className="border border-gray-200 rounded-lg">
+                    <div className="p-4 flex items-center justify-between bg-gray-50">
+                      <div>
+                        <div className="font-semibold text-gray-800">{sub.studentId?.name || 'Student'} — Grade {sub.studentId?.grade ?? ''}</div>
+                        <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()} • Time Taken: {sub.timeTaken ?? '-'} min</div>
+                      </div>
+                      <div className="text-blue-600 font-bold">Score: {sub.score}%</div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {selectedQuizResults.questions.map((q, qIdx) => {
+                        const answer = sub.answers.find(a => a.questionIndex === qIdx);
+                        const isCorrect = answer ? answer.isCorrect : false;
+                        return (
+                          <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                            <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
+                            <div className="mt-1 text-sm">
+                              <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
+                              <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -844,8 +901,8 @@ const TeacherDashboard = () => {
           {chatMessages.map((msg, index) => (
             <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xs px-4 py-2 rounded-2xl ${msg.type === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-800'
                 }`}>
                 {msg.message}
               </div>
@@ -1019,8 +1076,8 @@ const TeacherDashboard = () => {
               key={item.id}
               onClick={() => setActiveSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeSection === item.id
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <item.icon className="w-5 h-5" />
