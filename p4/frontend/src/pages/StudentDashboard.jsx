@@ -32,6 +32,7 @@ const EduTrackDashboard = () => {
     { type: 'bot', message: 'Hi! I\'m your AI study assistant. How can I help you today?' }
   ]);
   const [quizzes, setQuizzes] = useState([]);
+  const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const sidebarItems = [
@@ -81,7 +82,22 @@ const EduTrackDashboard = () => {
     navigate(`/quiz/${quizId}`);
   };
 
+  const fetchStudentData = async () => {
+    try {
+      const studentId = localStorage.getItem('studentId');
+      if (!studentId) return;
+      const response = await fetch(`http://localhost:5000/api/user/student/${studentId}`);
+      const data = await response.json();
+      if (data.success) {
+        setStudentData(data.student);
+      }
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+    }
+  };
+
   useEffect(() => {
+    fetchStudentData();
     if (activeSection === 'quizzes') {
       fetchQuizzes();
     }
@@ -90,7 +106,7 @@ const EduTrackDashboard = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-2xl">
-        <h2 className="text-2xl font-bold mb-2">Welcome back, Alex! 🎯</h2>
+        <h2 className="text-2xl font-bold mb-2">Welcome back, {(studentData && studentData.name) || localStorage.getItem('studentName') || 'Student'}! 🎯</h2>
         <p className="opacity-90">Ready to continue your learning journey?</p>
       </div>
 
@@ -216,8 +232,8 @@ const EduTrackDashboard = () => {
           {chatMessages.map((msg, index) => (
             <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xs px-4 py-2 rounded-2xl ${msg.type === 'user'
-                  ? 'bg-purple-500 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-100 text-gray-800'
                 }`}>
                 {msg.message}
               </div>
@@ -298,8 +314,8 @@ const EduTrackDashboard = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button className={`flex-1 px-4 py-2 rounded-lg flex items-center justify-center gap-2 ${video.watched
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                  ? 'bg-green-100 text-green-600'
+                  : 'bg-purple-500 text-white hover:bg-purple-600'
                   }`}>
                   <PlayCircle className="w-4 h-4" />
                   {video.watched ? 'Watched' : 'Watch'}
@@ -447,8 +463,8 @@ const EduTrackDashboard = () => {
                 }
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeSection === item.id
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <item.icon className="w-5 h-5" />
@@ -483,8 +499,8 @@ const EduTrackDashboard = () => {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">Alex Johnson</p>
-                    <p className="text-sm text-gray-600">Grade 10</p>
+                    <p className="font-medium text-gray-800">{(studentData && studentData.name) || localStorage.getItem('studentName') || 'Student'}</p>
+                    <p className="text-sm text-gray-600">{studentData?.grade ? `Grade ${studentData.grade}` : 'Grade'}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />
                 </button>

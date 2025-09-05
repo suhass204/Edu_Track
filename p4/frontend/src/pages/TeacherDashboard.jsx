@@ -267,7 +267,7 @@ const TeacherDashboard = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-2xl">
-        <h2 className="text-2xl font-bold mb-2">Welcome back, Ms. Sharma! 🎓</h2>
+        <h2 className="text-2xl font-bold mb-2">Welcome back, {(teacherData && teacherData.name) || localStorage.getItem('teacherName') || 'Teacher'}! 🎓</h2>
         <p className="opacity-90">Ready to inspire your students today?</p>
       </div>
 
@@ -1112,8 +1112,8 @@ const TeacherDashboard = () => {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">Ms. Sharma</p>
-                    <p className="text-sm text-gray-600">Mathematics Teacher</p>
+                    <p className="font-medium text-gray-800">{(teacherData && teacherData.name) || localStorage.getItem('teacherName') || 'Teacher'}</p>
+                    <p className="text-sm text-gray-600">{teacherData?.subjects ? teacherData.subjects.join(', ') : 'Teacher'}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />
                 </button>
