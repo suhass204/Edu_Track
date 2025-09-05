@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Home, 
-  FileText, 
-  MessageCircle, 
-  Play, 
-  BarChart3, 
-  BookOpen, 
-  Bell, 
-  User, 
-  Settings, 
-  LogOut, 
+import {
+  Home,
+  FileText,
+  MessageCircle,
+  Play,
+  BarChart3,
+  BookOpen,
+  Bell,
+  User,
+  Settings,
+  LogOut,
   ChevronDown,
   Trophy,
   Clock,
@@ -67,6 +67,7 @@ const TeacherDashboard = () => {
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
   const [teacherData, setTeacherData] = useState(null);
+  const [editingQuizId, setEditingQuizId] = useState(null);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -82,9 +83,9 @@ const TeacherDashboard = () => {
 
   const handleSendMessage = () => {
     if (chatInput.trim()) {
-      setChatMessages([...chatMessages, 
-        { type: 'user', message: chatInput },
-        { type: 'bot', message: 'Thank you for your message! I\'ll help you with your teaching needs.' }
+      setChatMessages([...chatMessages,
+      { type: 'user', message: chatInput },
+      { type: 'bot', message: 'Thank you for your message! I\'ll help you with your teaching needs.' }
       ]);
       setChatInput('');
     }
@@ -126,6 +127,71 @@ const TeacherDashboard = () => {
       }
     } catch (error) {
       alert('Error creating quiz: ' + error.message);
+    }
+  };
+
+  const startEditQuiz = (quiz) => {
+    setEditingQuizId(quiz._id);
+    setShowQuizForm(true);
+    setQuizForm({
+      title: quiz.title || '',
+      subject: quiz.subject || '',
+      grade: String(quiz.grade ?? ''),
+      deadline: quiz.deadline ? new Date(quiz.deadline).toISOString().slice(0, 16) : '',
+      mode: quiz.mode || 'test',
+      duration: quiz.duration || 30
+    });
+    setQuestions((quiz.questions || []).map(q => ({
+      question: q.question || '',
+      options: q.options || ['', '', '', ''],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      points: typeof q.points === 'number' ? q.points : 1
+    })));
+  };
+
+  const handleUpdateQuiz = async () => {
+    if (!editingQuizId) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/quiz/${editingQuizId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...quizForm,
+          grade: parseInt(quizForm.grade, 10),
+          questions: questions,
+          numberOfQuestions: questions.length
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Quiz updated successfully!');
+        setEditingQuizId(null);
+        setShowQuizForm(false);
+        setQuizForm({ title: '', subject: '', grade: '', deadline: '', mode: 'test', duration: 30 });
+        setQuestions([]);
+        fetchQuizzes();
+      } else {
+        alert('Error updating quiz: ' + data.error);
+      }
+    } catch (error) {
+      alert('Error updating quiz: ' + error.message);
+    }
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    const confirmed = window.confirm('Are you sure you want to delete this quiz? This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/quiz/${quizId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (data.success) {
+        alert('Quiz deleted successfully');
+        fetchQuizzes();
+      } else {
+        alert('Error deleting quiz: ' + data.error);
+      }
+    } catch (error) {
+      alert('Error deleting quiz: ' + error.message);
     }
   };
 
@@ -189,7 +255,7 @@ const TeacherDashboard = () => {
         <h2 className="text-2xl font-bold mb-2">Welcome back, Ms. Sharma! 🎓</h2>
         <p className="opacity-90">Ready to inspire your students today?</p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-lg border border-blue-100">
           <div className="flex items-center justify-between mb-4">
@@ -251,11 +317,10 @@ const TeacherDashboard = () => {
             ].map((activity, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.type === 'submission' ? 'bg-green-500' :
-                    activity.type === 'message' ? 'bg-blue-500' :
-                    activity.type === 'video' ? 'bg-purple-500' : 'bg-orange-500'
-                  }`}></div>
+                  <div className={`w-2 h-2 rounded-full ${activity.type === 'submission' ? 'bg-green-500' :
+                      activity.type === 'message' ? 'bg-blue-500' :
+                        activity.type === 'video' ? 'bg-purple-500' : 'bg-orange-500'
+                    }`}></div>
                   <span className="text-gray-800">{activity.action}</span>
                 </div>
                 <span className="text-sm text-gray-500">{activity.time}</span>
@@ -272,16 +337,16 @@ const TeacherDashboard = () => {
               <p className="opacity-90">"Give feedback quickly to boost learning! Students who receive feedback within 24 hours show 40% better retention."</p>
             </div>
           </div>
-      </div>
         </div>
       </div>
+    </div>
   );
 
   const renderQuizzes = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Create & Manage Quizzes</h2>
-        <button 
+        <button
           onClick={() => setShowQuizForm(!showQuizForm)}
           className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600"
         >
@@ -293,7 +358,7 @@ const TeacherDashboard = () => {
       {showQuizForm && (
         <div className="bg-white p-6 rounded-xl shadow-lg">
           <h3 className="font-bold text-gray-800 mb-4">Create New Quiz</h3>
-          
+
           {/* Basic Quiz Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <input
@@ -301,12 +366,12 @@ const TeacherDashboard = () => {
               placeholder="Quiz Title"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quizForm.title}
-              onChange={(e) => setQuizForm({...quizForm, title: e.target.value})}
+              onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })}
             />
-            <select 
+            <select
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quizForm.subject}
-              onChange={(e) => setQuizForm({...quizForm, subject: e.target.value})}
+              onChange={(e) => setQuizForm({ ...quizForm, subject: e.target.value })}
             >
               <option value="">Select Subject</option>
               <option value="Mathematics">Mathematics</option>
@@ -318,21 +383,29 @@ const TeacherDashboard = () => {
               <option value="Chemistry">Chemistry</option>
               <option value="Biology">Biology</option>
             </select>
-            <select 
+            <select
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quizForm.grade}
-              onChange={(e) => setQuizForm({...quizForm, grade: e.target.value})}
+              onChange={(e) => setQuizForm({ ...quizForm, grade: e.target.value })}
             >
               <option value="">Select Grade</option>
+              <option value="1">Grade 1</option>
+              <option value="2">Grade 2</option>
+              <option value="3">Grade 3</option>
+              <option value="4">Grade 4</option>
+              <option value="5">Grade 5</option>
+              <option value="6">Grade 6</option>
+              <option value="7">Grade 7</option>
+              <option value="8">Grade 8</option>
               <option value="9">Grade 9</option>
               <option value="10">Grade 10</option>
               <option value="11">Grade 11</option>
               <option value="12">Grade 12</option>
             </select>
-            <select 
+            <select
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quizForm.mode}
-              onChange={(e) => setQuizForm({...quizForm, mode: e.target.value})}
+              onChange={(e) => setQuizForm({ ...quizForm, mode: e.target.value })}
             >
               <option value="test">Test Mode</option>
               <option value="practice">Practice Mode</option>
@@ -342,7 +415,7 @@ const TeacherDashboard = () => {
               placeholder="Duration (minutes)"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quizForm.duration}
-              onChange={(e) => setQuizForm({...quizForm, duration: parseInt(e.target.value)})}
+              onChange={(e) => setQuizForm({ ...quizForm, duration: parseInt(e.target.value) })}
               min="5"
               max="180"
             />
@@ -350,7 +423,7 @@ const TeacherDashboard = () => {
               type="datetime-local"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quizForm.deadline}
-              onChange={(e) => setQuizForm({...quizForm, deadline: e.target.value})}
+              onChange={(e) => setQuizForm({ ...quizForm, deadline: e.target.value })}
             />
           </div>
 
@@ -358,7 +431,7 @@ const TeacherDashboard = () => {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-bold text-gray-800">Questions</h4>
-              <button 
+              <button
                 onClick={addQuestion}
                 className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2"
               >
@@ -371,14 +444,14 @@ const TeacherDashboard = () => {
               <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <h5 className="font-medium text-gray-800">Question {index + 1}</h5>
-                  <button 
+                  <button
                     onClick={() => removeQuestion(index)}
                     className="text-red-600 hover:text-red-800"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 <input
                   type="text"
                   placeholder="Enter your question"
@@ -386,7 +459,7 @@ const TeacherDashboard = () => {
                   value={question.question}
                   onChange={(e) => updateQuestion(index, 'question', e.target.value)}
                 />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   {question.options.map((option, optionIndex) => (
                     <input
@@ -403,7 +476,7 @@ const TeacherDashboard = () => {
                     />
                   ))}
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <select
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -424,20 +497,30 @@ const TeacherDashboard = () => {
                     min="1"
                   />
                 </div>
-        </div>
-      ))}
+              </div>
+            ))}
           </div>
 
           <div className="flex gap-2">
-            <button 
-              onClick={handleCreateQuiz}
-              disabled={!quizForm.title || !quizForm.subject || !quizForm.grade || questions.length === 0}
-              className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Create Quiz
-            </button>
-            <button 
-              onClick={() => setShowQuizForm(false)}
+            {editingQuizId ? (
+              <button
+                onClick={handleUpdateQuiz}
+                disabled={!quizForm.title || !quizForm.subject || !quizForm.grade || questions.length === 0}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Update Quiz
+              </button>
+            ) : (
+              <button
+                onClick={handleCreateQuiz}
+                disabled={!quizForm.title || !quizForm.subject || !quizForm.grade || questions.length === 0}
+                className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Create Quiz
+              </button>
+            )}
+            <button
+              onClick={() => { setShowQuizForm(false); setEditingQuizId(null); }}
               className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600"
             >
               Cancel
@@ -450,7 +533,7 @@ const TeacherDashboard = () => {
       <div className="bg-white p-6 rounded-xl shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-800">Your Quizzes</h3>
-          <button 
+          <button
             onClick={fetchQuizzes}
             className="text-blue-600 hover:text-blue-800 text-sm"
           >
@@ -467,14 +550,14 @@ const TeacherDashboard = () => {
             quizzes.map((quiz, index) => {
               const isExpired = new Date(quiz.deadline) < new Date();
               const status = isExpired ? 'expired' : 'active';
-              const avgScore = quiz.submissions.length > 0 
+              const avgScore = quiz.submissions.length > 0
                 ? (quiz.submissions.reduce((sum, sub) => sum + sub.score, 0) / quiz.submissions.length).toFixed(1)
                 : 0;
-              
-  return (
+
+              return (
                 <div key={quiz._id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-    <div>
+                    <div>
                       <h4 className="font-bold text-gray-800">{quiz.title}</h4>
                       <p className="text-gray-600">{quiz.subject} • {quiz.grade}</p>
                       <div className="flex items-center gap-4 mt-2 text-sm">
@@ -482,28 +565,27 @@ const TeacherDashboard = () => {
                         <span className="text-gray-500">{quiz.duration} min</span>
                         {avgScore > 0 && <span className="text-green-600">Avg: {avgScore}%</span>}
                       </div>
-      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        status === 'active' ? 'bg-green-100 text-green-800' :
-                        status === 'expired' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${status === 'active' ? 'bg-green-100 text-green-800' :
+                          status === 'expired' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                        }`}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </span>
                       <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
+                      <button onClick={() => startEditQuiz(quiz)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
+                      <button onClick={() => handleDeleteQuiz(quiz._id)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
                         <Trash2 className="w-4 h-4" />
                       </button>
-      </div>
-      </div>
-    </div>
-  );
+                    </div>
+                  </div>
+                </div>
+              );
             })
           )}
         </div>
@@ -539,7 +621,7 @@ const TeacherDashboard = () => {
           ].map((submission, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
-    <div>
+                <div>
                   <h4 className="font-bold text-gray-800">{submission.student}</h4>
                   <p className="text-gray-600">{submission.quiz}</p>
                   <p className="text-sm text-gray-500">Submitted: {submission.submitted}</p>
@@ -550,18 +632,17 @@ const TeacherDashboard = () => {
                   ) : (
                     <span className="text-orange-600 font-medium">Pending</span>
                   )}
-                  <button className={`px-4 py-2 rounded-lg ${
-                    submission.status === 'graded' 
-                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  <button className={`px-4 py-2 rounded-lg ${submission.status === 'graded'
+                      ? 'bg-blue-500 text-white hover:bg-blue-600'
                       : 'bg-orange-500 text-white hover:bg-orange-600'
-                  }`}>
+                    }`}>
                     {submission.status === 'graded' ? 'View Details' : 'Grade Now'}
                   </button>
                 </div>
               </div>
-      </div>
+            </div>
           ))}
-      </div>
+        </div>
       </div>
     </div>
   );
@@ -654,7 +735,7 @@ const TeacherDashboard = () => {
               <div className="bg-blue-100 p-2 rounded-lg">
                 <FileTextIcon className="w-6 h-6 text-blue-600" />
               </div>
-    <div>
+              <div>
                 <h3 className="font-bold text-gray-800">{resource.title}</h3>
                 <p className="text-sm text-gray-600">{resource.type} • {resource.size}</p>
               </div>
@@ -678,7 +759,7 @@ const TeacherDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Student Progress Reports</h2>
-        <select 
+        <select
           className="px-4 py-2 border border-gray-300 rounded-lg"
           value={selectedClass}
           onChange={(e) => setSelectedClass(e.target.value)}
@@ -697,31 +778,31 @@ const TeacherDashboard = () => {
             <div className="bg-green-100 p-3 rounded-lg">
               <Target className="w-6 h-6 text-green-600" />
             </div>
-    <div>
+            <div>
               <h3 className="font-bold text-gray-800">Class Average</h3>
               <p className="text-2xl font-bold text-green-600">87%</p>
             </div>
           </div>
-    </div>
+        </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-blue-100 p-3 rounded-lg">
               <Users className="w-6 h-6 text-blue-600" />
             </div>
-    <div>
+            <div>
               <h3 className="font-bold text-gray-800">Active Students</h3>
               <p className="text-2xl font-bold text-blue-600">22/25</p>
             </div>
           </div>
-    </div>
+        </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-purple-100 p-3 rounded-lg">
               <TrendingUp className="w-6 h-6 text-purple-600" />
             </div>
-    <div>
+            <div>
               <h3 className="font-bold text-gray-800">Improvement</h3>
               <p className="text-2xl font-bold text-purple-600">+15%</p>
             </div>
@@ -757,22 +838,21 @@ const TeacherDashboard = () => {
   const renderChat = () => (
     <div className="h-full flex flex-col">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">AI Teaching Assistant</h2>
-      
+
       <div className="flex-1 bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col">
         <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-96">
           {chatMessages.map((msg, index) => (
             <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-xs px-4 py-2 rounded-2xl ${
-                msg.type === 'user' 
-                  ? 'bg-blue-500 text-white' 
+              <div className={`max-w-xs px-4 py-2 rounded-2xl ${msg.type === 'user'
+                  ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-800'
-              }`}>
+                }`}>
                 {msg.message}
               </div>
             </div>
           ))}
         </div>
-        
+
         <div className="p-4 border-t border-gray-200">
           <div className="flex gap-2">
             <input
@@ -783,7 +863,7 @@ const TeacherDashboard = () => {
               placeholder="Ask me about teaching strategies, student management..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button 
+            <button
               onClick={handleSendMessage}
               className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600"
             >
@@ -860,7 +940,7 @@ const TeacherDashboard = () => {
   const renderSettings = () => (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
-      
+
       <div className="bg-white p-6 rounded-xl shadow-lg">
         <h3 className="font-bold text-gray-800 mb-4">Profile Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -876,7 +956,7 @@ const TeacherDashboard = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Subjects Taught</label>
             <input type="text" defaultValue="Mathematics, Science" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-    <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
             <input type="tel" defaultValue="+1 (555) 123-4567" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
@@ -932,17 +1012,16 @@ const TeacherDashboard = () => {
             <h1 className="text-xl font-bold text-gray-800">EduTrack Teacher</h1>
           </div>
         </div>
-        
+
         <nav className="px-4 space-y-2">
           {sidebarItems.map(item => (
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                activeSection === item.id
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeSection === item.id
                   ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
@@ -956,19 +1035,19 @@ const TeacherDashboard = () => {
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-    <div>
+            <div>
               <h1 className="text-2xl font-bold text-gray-800">Teacher Dashboard</h1>
               <p className="text-gray-600">Manage your classes and inspire learning!</p>
-    </div>
-            
+            </div>
+
             <div className="flex items-center gap-4">
               <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <Bell className="w-5 h-5" />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">5</span>
               </button>
-              
+
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg"
                 >
@@ -981,7 +1060,7 @@ const TeacherDashboard = () => {
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />
                 </button>
-                
+
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                     <div className="p-2">
