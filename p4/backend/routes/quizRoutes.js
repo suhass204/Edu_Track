@@ -88,6 +88,7 @@ router.get('/teacher/:teacherId', async (req, res) => {
 
         const quizzes = await Quiz.find({ teacherId })
             .populate('teacherId', 'name')
+            .populate('submissions.studentId', 'name username grade')
             .sort({ createdAt: -1 });
 
         res.json({

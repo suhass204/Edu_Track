@@ -70,6 +70,7 @@ const TeacherDashboard = () => {
   const [editingQuizId, setEditingQuizId] = useState(null);
   const [selectedQuizResults, setSelectedQuizResults] = useState(null);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  const [selectedStudentSubmission, setSelectedStudentSubmission] = useState(null);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -215,6 +216,20 @@ const TeacherDashboard = () => {
       const data = await response.json();
       if (data.success) {
         setSelectedQuizResults(data.quiz);
+        setShowSubmissionModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching quiz results:', error);
+    }
+  };
+
+  const viewStudentSubmission = async (quizId, studentSubmission) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/quiz/${quizId}/results`);
+      const data = await response.json();
+      if (data.success) {
+        setSelectedQuizResults(data.quiz);
+        setSelectedStudentSubmission(studentSubmission);
         setShowSubmissionModal(true);
       }
     } catch (error) {
@@ -644,7 +659,7 @@ const TeacherDashboard = () => {
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="text-green-600 font-semibold">{sub.score}%</span>
-                          <button onClick={() => fetchQuizResults(quiz._id)} className="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm">View Details</button>
+                          <button onClick={() => viewStudentSubmission(quiz._id, sub)} className="px-3 py-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm">View Details</button>
                         </div>
                       </div>
                     ))}
@@ -661,41 +676,72 @@ const TeacherDashboard = () => {
           <div className="bg-white w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-xl shadow-xl">
             <div className="p-4 border-b flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-gray-800">{selectedQuizResults.title} — Submissions</h3>
+                <h3 className="font-bold text-gray-800">
+                  {selectedQuizResults.title} — {selectedStudentSubmission ? `${selectedStudentSubmission.studentId?.name || 'Student'} Details` : 'All Submissions'}
+                </h3>
                 <p className="text-sm text-gray-600">Grade {selectedQuizResults.grade} • {selectedQuizResults.subject}</p>
               </div>
-              <button onClick={() => { setShowSubmissionModal(false); setSelectedQuizResults(null); }} className="text-gray-600 hover:text-gray-800">Close</button>
+              <button onClick={() => { setShowSubmissionModal(false); setSelectedQuizResults(null); setSelectedStudentSubmission(null); }} className="text-gray-600 hover:text-gray-800">Close</button>
             </div>
             <div className="p-4 space-y-6">
-              {selectedQuizResults.submissions.length === 0 ? (
-                <div className="text-gray-500">No submissions.</div>
-              ) : (
-                selectedQuizResults.submissions.map((sub, sIdx) => (
-                  <div key={sIdx} className="border border-gray-200 rounded-lg">
-                    <div className="p-4 flex items-center justify-between bg-gray-50">
-                      <div>
-                        <div className="font-semibold text-gray-800">{sub.studentId?.name || 'Student'} — Grade {sub.studentId?.grade ?? ''}</div>
-                        <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()} • Time Taken: {sub.timeTaken ?? '-'} min</div>
-                      </div>
-                      <div className="text-blue-600 font-bold">Score: {sub.score}%</div>
+              {selectedStudentSubmission ? (
+                // Show specific student's submission
+                <div className="border border-gray-200 rounded-lg">
+                  <div className="p-4 flex items-center justify-between bg-gray-50">
+                    <div>
+                      <div className="font-semibold text-gray-800">{selectedStudentSubmission.studentId?.name || 'Student'} — Grade {selectedStudentSubmission.studentId?.grade ?? ''}</div>
+                      <div className="text-sm text-gray-500">Submitted {new Date(selectedStudentSubmission.submittedAt).toLocaleString()} • Time Taken: {selectedStudentSubmission.timeTaken ?? '-'} min</div>
                     </div>
-                    <div className="p-4 space-y-3">
-                      {selectedQuizResults.questions.map((q, qIdx) => {
-                        const answer = sub.answers.find(a => a.questionIndex === qIdx);
-                        const isCorrect = answer ? answer.isCorrect : false;
-                        return (
-                          <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                            <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
-                            <div className="mt-1 text-sm">
-                              <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
-                              <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <div className="text-blue-600 font-bold">Score: {selectedStudentSubmission.score}%</div>
                   </div>
-                ))
+                  <div className="p-4 space-y-3">
+                    {selectedQuizResults.questions.map((q, qIdx) => {
+                      const answer = selectedStudentSubmission.answers.find(a => a.questionIndex === qIdx);
+                      const isCorrect = answer ? answer.isCorrect : false;
+                      return (
+                        <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                          <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
+                          <div className="mt-1 text-sm">
+                            <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
+                            <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                // Show all submissions (fallback)
+                selectedQuizResults.submissions.length === 0 ? (
+                  <div className="text-gray-500">No submissions.</div>
+                ) : (
+                  selectedQuizResults.submissions.map((sub, sIdx) => (
+                    <div key={sIdx} className="border border-gray-200 rounded-lg">
+                      <div className="p-4 flex items-center justify-between bg-gray-50">
+                        <div>
+                          <div className="font-semibold text-gray-800">{sub.studentId?.name || 'Student'} — Grade {sub.studentId?.grade ?? ''}</div>
+                          <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()} • Time Taken: {sub.timeTaken ?? '-'} min</div>
+                        </div>
+                        <div className="text-blue-600 font-bold">Score: {sub.score}%</div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        {selectedQuizResults.questions.map((q, qIdx) => {
+                          const answer = sub.answers.find(a => a.questionIndex === qIdx);
+                          const isCorrect = answer ? answer.isCorrect : false;
+                          return (
+                            <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                              <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
+                              <div className="mt-1 text-sm">
+                                <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
+                                <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )
               )}
             </div>
           </div>
