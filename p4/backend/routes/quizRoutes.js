@@ -435,8 +435,19 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
         const { teacherId } = req.params;
         const { grade } = req.query;
 
-        // Get all quizzes for the teacher
-        let quizQuery = { teacherId };
+        // Get all students in the selected grade (or all students if "All Classes")
+        let studentQuery = {};
+        if (grade && grade !== 'All Classes') {
+            const numericGrade = parseInt(grade.replace('Grade ', ''));
+            studentQuery.grade = numericGrade;
+        }
+
+        const Student = require('../models/Student');
+        const allStudents = await Student.find(studentQuery).select('name username grade email');
+
+        // Get all quizzes that students in this grade might have taken
+        // This includes quizzes created by any teacher for this grade
+        let quizQuery = {};
         if (grade && grade !== 'All Classes') {
             const numericGrade = parseInt(grade.replace('Grade ', ''));
             quizQuery.grade = numericGrade;
@@ -444,9 +455,10 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
 
         const quizzes = await Quiz.find(quizQuery)
             .populate('submissions.studentId', 'name username grade')
+            .populate('teacherId', 'name')
             .sort({ createdAt: -1 });
 
-        // Calculate progress metrics
+        // Calculate progress metrics from quiz submissions
         const allSubmissions = [];
         quizzes.forEach(quiz => {
             quiz.submissions.forEach(submission => {
@@ -454,16 +466,19 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
                     studentId: submission.studentId._id,
                     studentName: submission.studentId.name,
                     studentGrade: submission.studentId.grade,
+                    quizId: quiz._id,
                     quizTitle: quiz.title,
                     quizSubject: quiz.subject,
+                    quizTeacher: quiz.teacherId.name,
                     score: submission.score,
                     submittedAt: submission.submittedAt,
-                    timeTaken: submission.timeTaken
+                    timeTaken: submission.timeTaken,
+                    answers: submission.answers
                 });
             });
         });
 
-        // Group by student
+        // Group by student with detailed quiz information
         const studentStats = {};
         allSubmissions.forEach(sub => {
             if (!studentStats[sub.studentId]) {
@@ -471,18 +486,28 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
                     name: sub.studentName,
                     grade: sub.studentGrade,
                     scores: [],
+                    quizzes: [],
                     totalQuizzes: 0,
                     averageScore: 0,
                     lastSubmission: null
                 };
             }
             studentStats[sub.studentId].scores.push(sub.score);
+            studentStats[sub.studentId].quizzes.push({
+                quizId: sub.quizId,
+                title: sub.quizTitle,
+                subject: sub.quizSubject,
+                teacher: sub.quizTeacher,
+                score: sub.score,
+                submittedAt: sub.submittedAt,
+                timeTaken: sub.timeTaken
+            });
             studentStats[sub.studentId].totalQuizzes++;
             studentStats[sub.studentId].lastSubmission = sub.submittedAt;
         });
 
         // Calculate averages and improvements
-        const students = Object.values(studentStats).map(student => {
+        const studentsWithData = Object.values(studentStats).map(student => {
             const scores = student.scores;
             const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
@@ -504,17 +529,81 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
             };
         });
 
-        // Sort by average score for ranking
-        students.sort((a, b) => b.averageScore - a.averageScore);
-        students.forEach((student, index) => {
+        // Create comprehensive student list including those without quiz data
+        const comprehensiveStudentList = allStudents.map(student => {
+            const studentData = studentStats[student._id.toString()];
+            if (studentData) {
+                // Student has quiz data
+                const scores = studentData.scores;
+                const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+                let improvement = 0;
+                if (scores.length >= 4) {
+                    const midPoint = Math.floor(scores.length / 2);
+                    const firstHalf = scores.slice(0, midPoint);
+                    const secondHalf = scores.slice(midPoint);
+                    const firstHalfAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+                    const secondHalfAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+                    improvement = Math.round(secondHalfAvg - firstHalfAvg);
+                }
+
+                return {
+                    _id: student._id,
+                    name: student.name,
+                    username: student.username,
+                    grade: student.grade,
+                    email: student.email,
+                    scores: scores,
+                    quizzes: studentData.quizzes,
+                    totalQuizzes: studentData.totalQuizzes,
+                    averageScore,
+                    improvement: improvement > 0 ? `+${improvement}%` : `${improvement}%`,
+                    lastSubmission: studentData.lastSubmission,
+                    hasQuizData: true
+                };
+            } else {
+                // Student has no quiz data
+                return {
+                    _id: student._id,
+                    name: student.name,
+                    username: student.username,
+                    grade: student.grade,
+                    email: student.email,
+                    scores: [],
+                    quizzes: [],
+                    totalQuizzes: 0,
+                    averageScore: 0,
+                    improvement: '0%',
+                    lastSubmission: null,
+                    hasQuizData: false
+                };
+            }
+        });
+
+        // Sort by average score for ranking (students with no data go to bottom)
+        comprehensiveStudentList.sort((a, b) => {
+            if (a.hasQuizData && !b.hasQuizData) return -1;
+            if (!a.hasQuizData && b.hasQuizData) return 1;
+            return b.averageScore - a.averageScore;
+        });
+
+        // Add ranking
+        comprehensiveStudentList.forEach((student, index) => {
             student.rank = index + 1;
         });
 
         // Calculate class statistics
-        const totalStudents = students.length;
-        const activeStudents = students.filter(s => s.totalQuizzes > 0).length;
-        const classAverage = students.length > 0 ? Math.round(students.reduce((sum, s) => sum + s.averageScore, 0) / students.length) : 0;
-        const overallImprovement = students.length > 0 ? Math.round(students.reduce((sum, s) => sum + parseInt(s.improvement.replace('%', '')), 0) / students.length) : 0;
+        const totalStudents = comprehensiveStudentList.length;
+        const activeStudents = comprehensiveStudentList.filter(s => s.hasQuizData).length;
+        const studentsWithScores = comprehensiveStudentList.filter(s => s.averageScore > 0);
+        const classAverage = studentsWithScores.length > 0
+            ? Math.round(studentsWithScores.reduce((sum, s) => sum + s.averageScore, 0) / studentsWithScores.length)
+            : 0;
+
+        const studentsWithImprovement = comprehensiveStudentList.filter(s => s.hasQuizData);
+        const overallImprovement = studentsWithImprovement.length > 0
+            ? Math.round(studentsWithImprovement.reduce((sum, s) => sum + parseInt(s.improvement.replace('%', '')), 0) / studentsWithImprovement.length)
+            : 0;
 
         res.json({
             success: true,
@@ -522,11 +611,14 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
                 classStats: {
                     totalStudents,
                     activeStudents,
+                    inactiveStudents: totalStudents - activeStudents,
                     classAverage,
-                    overallImprovement: overallImprovement > 0 ? `+${overallImprovement}%` : `${overallImprovement}%`
+                    overallImprovement: overallImprovement > 0 ? `+${overallImprovement}%` : `${overallImprovement}%`,
+                    participationRate: totalStudents > 0 ? Math.round((activeStudents / totalStudents) * 100) : 0
                 },
-                topStudents: students.slice(0, 10), // Top 10 students
-                allStudents: students
+                allStudents: comprehensiveStudentList,
+                topStudents: comprehensiveStudentList.filter(s => s.hasQuizData).slice(0, 10), // Top 10 students with quiz data
+                inactiveStudents: comprehensiveStudentList.filter(s => !s.hasQuizData) // Students who haven't taken any quizzes
             }
         });
 

@@ -1043,6 +1043,98 @@ const TeacherDashboard = () => {
               </div>
             )}
           </div>
+
+          {/* All Students Section */}
+          <div className="bg-white p-6 rounded-xl shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Users className="w-6 h-6 text-blue-600" />
+              All Students - {selectedClass}
+            </h3>
+            {progressData.allStudents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No students found for the selected class.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {progressData.allStudents.map((student, index) => (
+                  <div key={student._id} className={`flex items-center justify-between p-4 rounded-lg transition-colors ${student.hasQuizData ? 'bg-gray-50 hover:bg-gray-100' : 'bg-red-50 hover:bg-red-100'
+                    }`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${!student.hasQuizData ? 'bg-red-500' :
+                        student.rank === 1 ? 'bg-yellow-500' :
+                          student.rank === 2 ? 'bg-gray-400' :
+                            student.rank === 3 ? 'bg-orange-500' : 'bg-blue-500'
+                        }`}>
+                        {student.hasQuizData ? student.rank : '!'}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">{student.name}</div>
+                        <div className="text-sm text-gray-500">
+                          Grade {student.grade} • {student.username}
+                          {student.hasQuizData ? ` • ${student.totalQuizzes} quiz${student.totalQuizzes !== 1 ? 'es' : ''} taken` : ' • No quizzes taken'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      {student.hasQuizData ? (
+                        <>
+                          <div className="text-center">
+                            <div className="text-sm text-gray-500">Quizzes Taken</div>
+                            <div className="text-lg font-bold text-blue-600">{student.totalQuizzes}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-gray-500">Average Score</div>
+                            <div className="text-xl font-bold text-gray-800">{student.averageScore}%</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-gray-500">Improvement</div>
+                            <div className={`font-semibold ${parseInt(student.improvement.replace('%', '')) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {student.improvement}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <div className="text-sm text-red-500">No Quiz Data</div>
+                          <div className="text-sm text-gray-500">Encourage participation</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Inactive Students Section */}
+          {progressData.inactiveStudents && progressData.inactiveStudents.length > 0 && (
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+                Students Needing Attention - {selectedClass}
+              </h3>
+              <div className="space-y-3">
+                {progressData.inactiveStudents.map((student, index) => (
+                  <div key={student._id} className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">
+                        !
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">{student.name}</div>
+                        <div className="text-sm text-gray-500">Grade {student.grade} • {student.username} • No quizzes taken</div>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm text-red-500">No Participation</div>
+                      <div className="text-sm text-gray-500">Encourage engagement</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <div className="text-center py-12 text-gray-500">
