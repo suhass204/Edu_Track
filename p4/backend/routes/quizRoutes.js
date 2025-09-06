@@ -429,4 +429,114 @@ router.get('/:quizId/results', async (req, res) => {
     }
 });
 
+// Get student progress reports for a teacher
+router.get('/teacher/:teacherId/progress', async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+        const { grade } = req.query;
+
+        // Get all quizzes for the teacher
+        let quizQuery = { teacherId };
+        if (grade && grade !== 'All Classes') {
+            const numericGrade = parseInt(grade.replace('Grade ', ''));
+            quizQuery.grade = numericGrade;
+        }
+
+        const quizzes = await Quiz.find(quizQuery)
+            .populate('submissions.studentId', 'name username grade')
+            .sort({ createdAt: -1 });
+
+        // Calculate progress metrics
+        const allSubmissions = [];
+        quizzes.forEach(quiz => {
+            quiz.submissions.forEach(submission => {
+                allSubmissions.push({
+                    studentId: submission.studentId._id,
+                    studentName: submission.studentId.name,
+                    studentGrade: submission.studentId.grade,
+                    quizTitle: quiz.title,
+                    quizSubject: quiz.subject,
+                    score: submission.score,
+                    submittedAt: submission.submittedAt,
+                    timeTaken: submission.timeTaken
+                });
+            });
+        });
+
+        // Group by student
+        const studentStats = {};
+        allSubmissions.forEach(sub => {
+            if (!studentStats[sub.studentId]) {
+                studentStats[sub.studentId] = {
+                    name: sub.studentName,
+                    grade: sub.studentGrade,
+                    scores: [],
+                    totalQuizzes: 0,
+                    averageScore: 0,
+                    lastSubmission: null
+                };
+            }
+            studentStats[sub.studentId].scores.push(sub.score);
+            studentStats[sub.studentId].totalQuizzes++;
+            studentStats[sub.studentId].lastSubmission = sub.submittedAt;
+        });
+
+        // Calculate averages and improvements
+        const students = Object.values(studentStats).map(student => {
+            const scores = student.scores;
+            const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+            // Calculate improvement (compare first half vs second half of scores)
+            let improvement = 0;
+            if (scores.length >= 4) {
+                const midPoint = Math.floor(scores.length / 2);
+                const firstHalf = scores.slice(0, midPoint);
+                const secondHalf = scores.slice(midPoint);
+                const firstHalfAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+                const secondHalfAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+                improvement = Math.round(secondHalfAvg - firstHalfAvg);
+            }
+
+            return {
+                ...student,
+                averageScore,
+                improvement: improvement > 0 ? `+${improvement}%` : `${improvement}%`
+            };
+        });
+
+        // Sort by average score for ranking
+        students.sort((a, b) => b.averageScore - a.averageScore);
+        students.forEach((student, index) => {
+            student.rank = index + 1;
+        });
+
+        // Calculate class statistics
+        const totalStudents = students.length;
+        const activeStudents = students.filter(s => s.totalQuizzes > 0).length;
+        const classAverage = students.length > 0 ? Math.round(students.reduce((sum, s) => sum + s.averageScore, 0) / students.length) : 0;
+        const overallImprovement = students.length > 0 ? Math.round(students.reduce((sum, s) => sum + parseInt(s.improvement.replace('%', '')), 0) / students.length) : 0;
+
+        res.json({
+            success: true,
+            data: {
+                classStats: {
+                    totalStudents,
+                    activeStudents,
+                    classAverage,
+                    overallImprovement: overallImprovement > 0 ? `+${overallImprovement}%` : `${overallImprovement}%`
+                },
+                topStudents: students.slice(0, 10), // Top 10 students
+                allStudents: students
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching progress reports:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+
 module.exports = router; 
