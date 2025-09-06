@@ -37,7 +37,8 @@ import {
   PieChart,
   Activity,
   Mail,
-  BookMarked
+  BookMarked,
+  RefreshCw
 } from 'lucide-react';
 
 const TeacherDashboard = () => {
@@ -71,6 +72,8 @@ const TeacherDashboard = () => {
   const [selectedQuizResults, setSelectedQuizResults] = useState(null);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [selectedStudentSubmission, setSelectedStudentSubmission] = useState(null);
+  const [progressData, setProgressData] = useState(null);
+  const [loadingProgress, setLoadingProgress] = useState(false);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -237,6 +240,26 @@ const TeacherDashboard = () => {
     }
   };
 
+  const fetchProgressData = async (grade = 'All Classes') => {
+    try {
+      setLoadingProgress(true);
+      const teacherId = localStorage.getItem('teacherId') || '507f1f77bcf86cd799439011'; // Use actual teacher ID or fallback
+      const url = grade === 'All Classes'
+        ? `http://localhost:5000/api/quiz/teacher/${teacherId}/progress`
+        : `http://localhost:5000/api/quiz/teacher/${teacherId}/progress?grade=${grade}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.success) {
+        setProgressData(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching progress data:', error);
+    } finally {
+      setLoadingProgress(false);
+    }
+  };
+
   const addQuestion = () => {
     const newQuestion = {
       question: '',
@@ -277,7 +300,15 @@ const TeacherDashboard = () => {
   useEffect(() => {
     fetchQuizzes();
     fetchTeacherData();
+    fetchProgressData();
   }, []);
+
+  // Fetch progress data when selected class changes
+  useEffect(() => {
+    if (activeSection === 'reports') {
+      fetchProgressData(selectedClass);
+    }
+  }, [selectedClass, activeSection]);
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -862,79 +893,163 @@ const TeacherDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Student Progress Reports</h2>
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-lg"
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-        >
-          <option>All Classes</option>
-          <option>Grade 9</option>
-          <option>Grade 10</option>
-          <option>Grade 11</option>
-          <option>Grade 12</option>
-        </select>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Select Grade:</label>
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+            >
+              <option value="All Classes">All Classes</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10">Grade 10</option>
+              <option value="Grade 11">Grade 11</option>
+              <option value="Grade 12">Grade 12</option>
+            </select>
+          </div>
+          <button
+            onClick={() => fetchProgressData(selectedClass)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm flex items-center gap-2"
+            disabled={loadingProgress}
+          >
+            <RefreshCw className={`w-4 h-4 ${loadingProgress ? 'animate-spin' : ''}`} />
+            {loadingProgress ? 'Loading...' : 'Refresh Data'}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <Target className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-800">Class Average</h3>
-              <p className="text-2xl font-bold text-green-600">87%</p>
-            </div>
-          </div>
+      {loadingProgress ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-500">Loading progress data...</div>
         </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-blue-100 p-3 rounded-lg">
+      ) : progressData ? (
+        <>
+          {/* Class Overview Section */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-800">Active Students</h3>
-              <p className="text-2xl font-bold text-blue-600">22/25</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-800">Improvement</h3>
-              <p className="text-2xl font-bold text-purple-600">+15%</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <h3 className="font-bold text-gray-800 mb-4">Top Performing Students</h3>
-        <div className="space-y-3">
-          {[
-            { name: 'Sarah Johnson', score: 95, rank: 1, improvement: '+8%' },
-            { name: 'Alex Chen', score: 92, rank: 2, improvement: '+12%' },
-            { name: 'Mike Wilson', score: 89, rank: 3, improvement: '+5%' },
-            { name: 'Emma Davis', score: 87, rank: 4, improvement: '+10%' }
-          ].map((student, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="font-bold text-blue-600">#{student.rank}</span>
-                <span className="font-medium text-gray-800">{student.name}</span>
+              Class Overview - {selectedClass}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="text-sm text-gray-600 mb-1">Total Students</div>
+                <div className="text-2xl font-bold text-blue-600">{progressData.classStats.totalStudents}</div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-green-600 font-medium">{student.improvement}</span>
-                <span className="font-bold text-gray-800">{student.score}%</span>
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="text-sm text-gray-600 mb-1">Active Students</div>
+                <div className="text-2xl font-bold text-green-600">{progressData.classStats.activeStudents}</div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="text-sm text-gray-600 mb-1">Participation Rate</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {progressData.classStats.totalStudents > 0
+                    ? Math.round((progressData.classStats.activeStudents / progressData.classStats.totalStudents) * 100)
+                    : 0}%
+                </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Overall Class Performance Section */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-green-600" />
+              Overall Class Performance
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-green-100 p-3 rounded-lg">
+                    <Target className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Class Average Score</h4>
+                    <p className="text-3xl font-bold text-green-600">{progressData.classStats.classAverage}%</p>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Based on {progressData.topStudents.reduce((sum, s) => sum + s.totalQuizzes, 0)} quiz submissions
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-purple-100 p-3 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Overall Improvement</h4>
+                    <p className="text-3xl font-bold text-purple-600">{progressData.classStats.overallImprovement}</p>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Average improvement across all students
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Performing Students Section */}
+          <div className="bg-white p-6 rounded-xl shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-yellow-600" />
+              Top Performing Students - {selectedClass}
+            </h3>
+            {progressData.topStudents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No student data available for the selected class.</p>
+                <p className="text-sm mt-2">Create quizzes and have students submit them to see progress reports.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {progressData.topStudents.map((student, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${index === 0 ? 'bg-yellow-500' :
+                        index === 1 ? 'bg-gray-400' :
+                          index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                        }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">{student.name}</div>
+                        <div className="text-sm text-gray-500">Grade {student.grade} • {student.totalQuizzes} quiz{student.totalQuizzes !== 1 ? 'es' : ''} taken</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-center">
+                        <div className="text-sm text-gray-500">Improvement</div>
+                        <div className={`font-semibold ${parseInt(student.improvement.replace('%', '')) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {student.improvement}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm text-gray-500">Average Score</div>
+                        <div className="text-xl font-bold text-gray-800">{student.averageScore}%</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>No progress data available. Create some quizzes and have students submit them to see progress reports.</p>
         </div>
-      </div>
+      )}
     </div>
   );
 
