@@ -10,7 +10,7 @@ import AddCredentials from './pages/AddCredentials';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import QuizTaking from './pages/QuizTaking';
-import StudentQuiz from './pages/StudentQuiz';
+import StudentQuizDashboard from './pages/StudentQuiz';
 
 import './index.css'
 
@@ -24,7 +24,7 @@ function App() {
         <Route path="/admin/add" element={<AddCredentials />} />
         <Route path="/teacher" element={<TeacherLogin />} />
         <Route path="/student" element={<StudentLogin />} />
-        <Route path="/quizzes" element={<StudentQuiz />} />
+        <Route path="/quizzes" element={<StudentQuizDashboard />} />
         {/* <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} /> */}
          <Route path="/teacher-dashboard" element={
