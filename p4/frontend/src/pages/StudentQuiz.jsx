@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Home,
   FileText,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 const StudentQuizDashboard = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('quizzes');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
@@ -137,7 +139,7 @@ const StudentQuizDashboard = () => {
     if (itemId === 'dashboard') {
       // In a real app, this would navigate to dashboard
       // For now, just show a message or redirect logic
-      alert('Navigate to Dashboard - implement routing as needed');
+      navigate("/student-dashboard");
     } else if (itemId === 'quizzes') {
       // Stay on current page
       setActiveSection('quizzes');
