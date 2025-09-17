@@ -312,7 +312,7 @@ const TeacherDashboard = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-2xl">
+      <div className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-7 px-4 rounded-lg font-medium">
         <h2 className="text-2xl font-bold mb-2">Welcome back, {(teacherData && teacherData.name) || localStorage.getItem('teacherName') || 'Teacher'}! 🎓</h2>
         <p className="opacity-90">Ready to inspire your students today?</p>
       </div>
@@ -409,7 +409,7 @@ const TeacherDashboard = () => {
         <h2 className="text-2xl font-bold text-gray-800">Create & Manage Quizzes</h2>
         <button
           onClick={() => setShowQuizForm(!showQuizForm)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600"
+          className="bg-emerald-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-500"
         >
           <Plus className="w-4 h-4" />
           {showQuizForm ? 'Cancel' : 'Create New Quiz'}
@@ -785,7 +785,7 @@ const TeacherDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Upload Video Lessons</h2>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600">
+        <button className="bg-emerald-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600">
           <Upload className="w-4 h-4" />
           Upload Video
         </button>
@@ -796,7 +796,7 @@ const TeacherDashboard = () => {
           <Video className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-800 mb-2">Upload Video Lesson</h3>
           <p className="text-gray-600 mb-4">Drag and drop your video file here, or click to browse</p>
-          <button className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+          <button className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
             Choose File
           </button>
         </div>
@@ -809,7 +809,7 @@ const TeacherDashboard = () => {
           { title: 'World War II Overview', subject: 'History', duration: '20 min', views: 28, uploaded: '3 days ago' }
         ].map((video, index) => (
           <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-400 to-purple-400 h-40 flex items-center justify-center">
+            <div className="bg-gradient-to-r from-emerald-400 to-green-400 h-40 flex items-center justify-center">
               <PlayCircle className="w-12 h-12 text-white" />
             </div>
             <div className="p-4">
@@ -823,7 +823,7 @@ const TeacherDashboard = () => {
                 <span>{video.uploaded}</span>
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <button className="flex-1 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
                   Edit
                 </button>
                 <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
@@ -841,7 +841,7 @@ const TeacherDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Upload Notes & Study Material</h2>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600">
+        <button className="bg-emerald-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-400">
           <FileUp className="w-4 h-4" />
           Upload Resource
         </button>
@@ -852,7 +852,7 @@ const TeacherDashboard = () => {
           <FileTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-800 mb-2">Upload Study Material</h3>
           <p className="text-gray-600 mb-4">Upload PDFs, PPTs, Docs, or other study materials</p>
-          <button className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+          <button className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-green-400">
             Choose Files
           </button>
         </div>
@@ -876,7 +876,7 @@ const TeacherDashboard = () => {
             </div>
             <p className="text-sm text-gray-600 mb-3">{resource.subject} • {resource.uploaded}</p>
             <div className="flex gap-2">
-              <button className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+              <button className="flex-1 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-green-400">
                 Assign to Class
               </button>
               <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
@@ -918,7 +918,7 @@ const TeacherDashboard = () => {
           </div>
           <button
             onClick={() => fetchProgressData(selectedClass)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm flex items-center gap-2"
+            className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-green-400 text-sm flex items-center gap-2"
             disabled={loadingProgress}
           >
             <RefreshCw className={`w-4 h-4 ${loadingProgress ? 'animate-spin' : ''}`} />
@@ -1154,7 +1154,7 @@ const TeacherDashboard = () => {
           {chatMessages.map((msg, index) => (
             <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xs px-4 py-2 rounded-2xl ${msg.type === 'user'
-                ? 'bg-blue-500 text-white'
+                ? 'bg-emerald-500 text-white'
                 : 'bg-gray-100 text-gray-800'
                 }`}>
                 {msg.message}
@@ -1175,7 +1175,7 @@ const TeacherDashboard = () => {
             />
             <button
               onClick={handleSendMessage}
-              className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600"
+              className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-green-400"
             >
               <Send className="w-5 h-5" />
             </button>
@@ -1193,7 +1193,7 @@ const TeacherDashboard = () => {
           <button
             key={index}
             onClick={() => setChatInput(suggestion)}
-            className="p-3 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 rounded-lg hover:from-blue-200 hover:to-indigo-200 transition-all"
+            className="p-3 bg-gradient-to-r from-emerald-100 to-green-100 text-blue-700 rounded-lg hover:from-blue-200 hover:to-green-200 transition-all"
           >
             {suggestion}
           </button>
@@ -1316,7 +1316,7 @@ const TeacherDashboard = () => {
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 rounded-lg">
+            <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-xl font-bold text-gray-800">EduTrack Teacher</h1>
@@ -1329,7 +1329,7 @@ const TeacherDashboard = () => {
               key={item.id}
               onClick={() => setActiveSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeSection === item.id
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
@@ -1361,7 +1361,7 @@ const TeacherDashboard = () => {
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
