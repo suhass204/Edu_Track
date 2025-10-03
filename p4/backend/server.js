@@ -10,9 +10,13 @@ app.use(express.json());
 
 const authRoutes = require('./routes/authRoutes');
 const quizRoutes = require('./routes/quizRoutes');
+const teacherRoutes = require('./routes/teacher');
+const studentRoutes = require('./routes/student');
 
 app.use('/api', authRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/teacher', teacherRoutes);
+app.use('/api/student', studentRoutes);
 
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,

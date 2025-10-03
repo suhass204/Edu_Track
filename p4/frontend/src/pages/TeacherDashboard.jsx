@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Home,
   FileText,
@@ -42,6 +43,7 @@ import {
 } from 'lucide-react';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -781,61 +783,61 @@ const TeacherDashboard = () => {
     </div>
   );
 
-  const renderVideos = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Upload Video Lessons</h2>
-        <button className="bg-emerald-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600">
-          <Upload className="w-4 h-4" />
-          Upload Video
-        </button>
-      </div>
+  // const renderVideos = () => (
+  //   <div className="space-y-6">
+  //     <div className="flex items-center justify-between">
+  //       <h2 className="text-2xl font-bold text-gray-800">Upload Video Lessons</h2>
+  //       <button className="bg-emerald-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600">
+  //         <Upload className="w-4 h-4" />
+  //         Upload Video
+  //       </button>
+  //     </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <Video className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-800 mb-2">Upload Video Lesson</h3>
-          <p className="text-gray-600 mb-4">Drag and drop your video file here, or click to browse</p>
-          <button className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
-            Choose File
-          </button>
-        </div>
-      </div>
+  //     <div className="bg-white p-6 rounded-xl shadow-lg">
+  //       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+  //         <Video className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+  //         <h3 className="text-lg font-medium text-gray-800 mb-2">Upload Video Lesson</h3>
+  //         <p className="text-gray-600 mb-4">Drag and drop your video file here, or click to browse</p>
+  //         <button className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+  //           Choose File
+  //         </button>
+  //       </div>
+  //     </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { title: 'Algebra Basics', subject: 'Mathematics', duration: '15 min', views: 45, uploaded: '2 days ago' },
-          { title: 'Photosynthesis', subject: 'Science', duration: '12 min', views: 32, uploaded: '1 week ago' },
-          { title: 'World War II Overview', subject: 'History', duration: '20 min', views: 28, uploaded: '3 days ago' }
-        ].map((video, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-400 to-green-400 h-40 flex items-center justify-center">
-              <PlayCircle className="w-12 h-12 text-white" />
-            </div>
-            <div className="p-4">
-              <h3 className="font-bold text-gray-800 mb-2">{video.title}</h3>
-              <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
-                <span>{video.subject}</span>
-                <span>{video.duration}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                <span>{video.views} views</span>
-                <span>{video.uploaded}</span>
-              </div>
-              <div className="flex gap-2">
-                <button className="flex-1 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                  Edit
-                </button>
-                <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  //       {[
+  //         { title: 'Algebra Basics', subject: 'Mathematics', duration: '15 min', views: 45, uploaded: '2 days ago' },
+  //         { title: 'Photosynthesis', subject: 'Science', duration: '12 min', views: 32, uploaded: '1 week ago' },
+  //         { title: 'World War II Overview', subject: 'History', duration: '20 min', views: 28, uploaded: '3 days ago' }
+  //       ].map((video, index) => (
+  //         <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden">
+  //           <div className="bg-gradient-to-r from-emerald-400 to-green-400 h-40 flex items-center justify-center">
+  //             <PlayCircle className="w-12 h-12 text-white" />
+  //           </div>
+  //           <div className="p-4">
+  //             <h3 className="font-bold text-gray-800 mb-2">{video.title}</h3>
+  //             <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+  //               <span>{video.subject}</span>
+  //               <span>{video.duration}</span>
+  //             </div>
+  //             <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+  //               <span>{video.views} views</span>
+  //               <span>{video.uploaded}</span>
+  //             </div>
+  //             <div className="flex gap-2">
+  //               <button className="flex-1 bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+  //                 Edit
+  //               </button>
+  //               <button className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
+  //                 <Trash2 className="w-4 h-4" />
+  //               </button>
+  //             </div>
+  //           </div>
+  //         </div>
+  //       ))}
+  //     </div>
+  //   </div>
+  // );
 
   const renderNotes = () => (
     <div className="space-y-6">
@@ -1300,7 +1302,7 @@ const TeacherDashboard = () => {
       case 'dashboard': return renderDashboard();
       case 'quizzes': return renderQuizzes();
       case 'submissions': return renderSubmissions();
-      case 'videos': return renderVideos();
+      case 'videos': navigate('/teacherVideos');
       case 'notes': return renderNotes();
       case 'reports': return renderReports();
       case 'chat': return renderChat();

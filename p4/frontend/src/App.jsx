@@ -11,6 +11,8 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import QuizTaking from './pages/QuizTaking';
 import StudentQuizDashboard from './pages/StudentQuiz';
+import TeacherVideo from './pages/TeacherVideo';
+import StudentVideo from './pages/StudentVideo';
 
 import './index.css'
 
@@ -25,6 +27,8 @@ function App() {
         <Route path="/teacher" element={<TeacherLogin />} />
         <Route path="/student" element={<StudentLogin />} />
         <Route path="/quizzes" element={<StudentQuizDashboard />} />
+        <Route path="/teacherVideos" element={<TeacherVideo />} />
+        <Route path="/studentVideos" element={<StudentVideo />} />
         {/* <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} /> */}
          <Route path="/teacher-dashboard" element={

@@ -423,7 +423,7 @@ const EduTrackDashboard = () => {
       case 'dashboard': return renderDashboard();
       case 'quizzes': return renderQuizzes();
       case 'chatbot': return renderChatbot();
-      case 'videos': return renderVideos();
+      case 'videos': navigate ('/studentVideos');
       case 'progress': return renderProgress();
       case 'resources': return (
         <div className="flex items-center justify-center h-64">
