@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Home,
   FileText,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 const StudentVideo = () => {
+    const navigate = useNavigate();
   const [activeSection] = useState('videos');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [studentData, setStudentData] = useState(null);
@@ -32,6 +34,22 @@ const StudentVideo = () => {
     { id: 'progress', icon: BarChart3, label: 'Progress Tracker' },
     { id: 'resources', icon: BookOpen, label: 'Notes/Resources' }
   ];
+
+  const navigateToSection = (sectionId) => {
+  switch (sectionId) {
+    case 'dashboard':
+      navigate('/student-dashboard');
+      break;
+    case 'quizzes':
+      navigate('/quizzes');
+      break;
+    case 'videos':
+      navigate('/studentVideos');
+      break;
+    default:
+      break;
+  }
+};
 
   const fetchVideos = async () => {
     try {
@@ -65,6 +83,7 @@ const StudentVideo = () => {
           {sidebarItems.map(item => (
             <button
               key={item.id}
+              onClick={() => navigateToSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 activeSection === item.id
                   ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'

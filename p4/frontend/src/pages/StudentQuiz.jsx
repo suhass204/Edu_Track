@@ -143,8 +143,10 @@ const StudentQuizDashboard = () => {
     } else if (itemId === 'quizzes') {
       // Stay on current page
       setActiveSection('quizzes');
-    } else {
+    } else if(itemId === 'videos') {
       // For other sections, set the active section
+      navigate('/studentVideos');
+    }else{
       setActiveSection(itemId);
     }
   };
