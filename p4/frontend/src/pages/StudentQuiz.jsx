@@ -318,15 +318,8 @@ const StudentQuizDashboard = () => {
           </div>
         );
       case 'videos':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <Play className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-600">Video Recommendations</h3>
-              <p className="text-gray-500">Navigate to main dashboard for video content.</p>
-            </div>
-          </div>
-        );
+          navigate('/studentVideos');
+          break;
       case 'progress':
         return (
           <div className="flex items-center justify-center h-64">
@@ -338,15 +331,8 @@ const StudentQuizDashboard = () => {
           </div>
         );
       case 'resources':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-600">Coming Soon!</h3>
-              <p className="text-gray-500">Notes & Resources feature will be available soon.</p>
-            </div>
-          </div>
-        );
+        navigate('/studentNotes');
+        break;
       default: 
         return renderQuizContent();
     }

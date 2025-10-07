@@ -425,15 +425,7 @@ const EduTrackDashboard = () => {
       case 'chatbot': return renderChatbot();
       case 'videos': navigate ('/studentVideos');
       case 'progress': return renderProgress();
-      case 'resources': return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-600">Coming Soon!</h3>
-            <p className="text-gray-500">Notes & Resources feature will be available soon.</p>
-          </div>
-        </div>
-      );
+      case 'resources': navigate('/studentNotes');
       default: return renderDashboard();
     }
   };

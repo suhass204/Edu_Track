@@ -46,6 +46,9 @@ const StudentVideo = () => {
     case 'videos':
       navigate('/studentVideos');
       break;
+    case 'resources':
+      navigate('/studentNotes');
+      break;      
     default:
       break;
   }
