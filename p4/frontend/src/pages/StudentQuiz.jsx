@@ -308,15 +308,8 @@ const StudentQuizDashboard = () => {
       case 'quizzes': 
         return renderQuizContent();
       case 'chatbot':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-600">AI Chatbot</h3>
-              <p className="text-gray-500">Navigate to main dashboard for full chatbot functionality.</p>
-            </div>
-          </div>
-        );
+        navigate('/studentChatbot');
+        break;
       case 'videos':
           navigate('/studentVideos');
           break;

@@ -48,7 +48,10 @@ const StudentVideo = () => {
       break;
     case 'resources':
       navigate('/studentNotes');
-      break;      
+      break; 
+    case 'chatbot':
+      navigate('/studentChatbot');
+      break;     
     default:
       break;
   }

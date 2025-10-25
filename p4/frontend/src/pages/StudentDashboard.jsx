@@ -422,10 +422,10 @@ const EduTrackDashboard = () => {
     switch (activeSection) {
       case 'dashboard': return renderDashboard();
       case 'quizzes': return renderQuizzes();
-      case 'chatbot': return renderChatbot();
-      case 'videos': navigate ('/studentVideos');
+      case 'chatbot': navigate('/studentChatbot');break;
+      case 'videos': navigate ('/studentVideos');break;
       case 'progress': return renderProgress();
-      case 'resources': navigate('/studentNotes');
+      case 'resources': navigate('/studentNotes');break;
       default: return renderDashboard();
     }
   };

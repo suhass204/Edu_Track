@@ -48,6 +48,9 @@ const StudentNotes = () => {
     case 'resources':
         navigate('/studentNotes');
         break;
+      case 'chatbot':
+        navigate('/studentChatbot');
+        break;
       default:
         break;
     }

@@ -1198,7 +1198,7 @@ const TeacherDashboard = () => {
       case 'videos': navigate('/teacherVideos');break;
       case 'notes': navigate('/teacherNotes');break;
       case 'reports': return renderReports();
-      case 'chat': return renderChat();
+      case 'chat':navigate('/teacherChatbot');break;
       case 'class': return renderClass();
       case 'settings': return renderSettings();
       default: return renderDashboard();
