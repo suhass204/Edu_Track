@@ -424,7 +424,7 @@ const EduTrackDashboard = () => {
       case 'quizzes': return renderQuizzes();
       case 'chatbot': navigate('/studentChatbot');break;
       case 'videos': navigate ('/studentVideos');break;
-      case 'progress': return renderProgress();
+      case 'progress': navigate('/studentprogress');break;
       case 'resources': navigate('/studentNotes');break;
       default: return renderDashboard();
     }

@@ -469,7 +469,7 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
                     quizId: quiz._id,
                     quizTitle: quiz.title,
                     quizSubject: quiz.subject,
-                    quizTeacher: quiz.teacherId.name,
+                    quizTeacher: quiz.name,
                     score: submission.score,
                     submittedAt: submission.submittedAt,
                     timeTaken: submission.timeTaken,
@@ -566,7 +566,7 @@ router.get('/teacher/:teacherId/progress', async (req, res) => {
                 return {
                     _id: student._id,
                     name: student.name,
-                    username: student.username,
+                    username: student.name,
                     grade: student.grade,
                     email: student.email,
                     scores: [],

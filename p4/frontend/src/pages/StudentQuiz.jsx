@@ -107,33 +107,68 @@ const StudentQuizDashboard = () => {
   };
 
   const handleSubmit = async () => {
-    const answers = Object.keys(studentAnswers).map((qIndex) => ({
-      questionIndex: Number(qIndex),
-      selectedAnswer: studentAnswers[qIndex]
-    }));
+  const answers = Object.keys(studentAnswers).map((qIndex) => ({
+    questionIndex: Number(qIndex),
+    selectedAnswer: studentAnswers[qIndex],
+  }));
 
-    try {
-      const response = await fetch(`http://localhost:5000/api/quiz/${selectedQuiz._id}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/quiz/${selectedQuiz._id}/submit`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           studentId,
+          quizId: selectedQuiz._id,
           answers,
-          timeTaken: 120 // Example static time, or you can use a timer
-        })
+          timeTaken: 120, // Example static time
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(`Quiz submitted! Score: ${result.score}%`);
+
+      // ✅ Step 2: Trigger Gemini progress analysis
+      const quizResults = selectedQuiz.questions.map((q, idx) => {
+        const studentAnswer = answers.find(a => a.questionIndex === idx);
+        return {
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.options[q.correctAnswer],
+          studentAnswer: studentAnswer
+            ? q.options[studentAnswer.selectedAnswer]
+            : "Not Answered",
+        };
       });
 
-      const result = await response.json();
-      if (result.success) {
-        alert(`Quiz submitted! Score: ${result.score}%`);
-        setSelectedQuiz(null);
+      const analyzeRes = await fetch("http://localhost:5000/api/progress/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId, quizResults, score: result.score}),
+      });
+
+      const analyzeData = await analyzeRes.json();
+      if (analyzeData.success) {
+        console.log("Adaptive analysis:", analyzeData.analysis);
+        alert("Progress analysis completed successfully!");
       } else {
-        alert(`Submission failed: ${result.error}`);
+        console.error("Error analyzing progress:", analyzeData.error);
       }
-    } catch (err) {
-      alert('Error submitting quiz');
+
+      setSelectedQuiz(null);
+    } else {
+      alert(`Submission failed: ${result.error}`);
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Error submitting quiz");
+  }
+};
+
 
   const handleNavigation = (itemId) => {
     if (itemId === 'dashboard') {
@@ -314,15 +349,8 @@ const StudentQuizDashboard = () => {
           navigate('/studentVideos');
           break;
       case 'progress':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-600">Progress Tracker</h3>
-              <p className="text-gray-500">Navigate to main dashboard for progress tracking.</p>
-            </div>
-          </div>
-        );
+        navigate('/studentprogress');
+        break;
       case 'resources':
         navigate('/studentNotes');
         break;

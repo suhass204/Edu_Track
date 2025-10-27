@@ -1039,64 +1039,6 @@ const TeacherDashboard = () => {
       )}
     </div>
   );
-
-  const renderChat = () => (
-    <div className="h-full flex flex-col">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">AI Teaching Assistant</h2>
-
-      <div className="flex-1 bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col">
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-96">
-          {chatMessages.map((msg, index) => (
-            <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-xs px-4 py-2 rounded-2xl ${msg.type === 'user'
-                ? 'bg-emerald-500 text-white'
-                : 'bg-gray-100 text-gray-800'
-                }`}>
-                {msg.message}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask me about teaching strategies, student management..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleSendMessage}
-              className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-green-400"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-2 gap-4">
-        {[
-          'Create engaging quiz questions',
-          'Student motivation strategies',
-          'Classroom management tips',
-          'Assessment best practices'
-        ].map((suggestion, index) => (
-          <button
-            key={index}
-            onClick={() => setChatInput(suggestion)}
-            className="p-3 bg-gradient-to-r from-emerald-100 to-green-100 text-blue-700 rounded-lg hover:from-blue-200 hover:to-green-200 transition-all"
-          >
-            {suggestion}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
   const renderClass = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1197,7 +1139,7 @@ const TeacherDashboard = () => {
       case 'submissions': return renderSubmissions();
       case 'videos': navigate('/teacherVideos');break;
       case 'notes': navigate('/teacherNotes');break;
-      case 'reports': return renderReports();
+      case 'reports':navigate('/teacherProgress');break;
       case 'chat':navigate('/teacherChatbot');break;
       case 'class': return renderClass();
       case 'settings': return renderSettings();

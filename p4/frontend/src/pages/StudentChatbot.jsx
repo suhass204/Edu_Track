@@ -115,7 +115,7 @@ const StudentChatbot = () => {
                 } else if (item.id === 'resources') {
                   navigate('/studentNotes');
                 } else if (item.id === 'progress') {
-                  navigate('/student-dashboard');
+                  navigate('/studentprogress');
                 } else {
                   setActiveSection(item.id);
                 }

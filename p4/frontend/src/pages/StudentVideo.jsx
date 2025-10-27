@@ -51,6 +51,9 @@ const StudentVideo = () => {
       break; 
     case 'chatbot':
       navigate('/studentChatbot');
+      break;
+      case 'progress':
+      navigate('/studentprogress');
       break;     
     default:
       break;

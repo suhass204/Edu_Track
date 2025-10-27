@@ -14,6 +14,7 @@ const quizRoutes = require('./routes/quizRoutes');
 const teacherRoutes = require('./routes/teacher');
 const studentRoutes = require('./routes/student');
 const notesRoutes = require('./routes/notes');
+const progressRoutes = require("./routes/progressRoutes");
 
 app.use('/api', authRoutes);
 app.use('/api/quiz', quizRoutes);
@@ -22,6 +23,7 @@ app.use('/api/student', studentRoutes);
 app.use('/uploads', express.static('uploads')); // Serve uploaded PDFs
 app.use('/api/notes', notesRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/progress", progressRoutes);
 
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,

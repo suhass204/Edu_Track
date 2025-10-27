@@ -17,6 +17,8 @@ import TeacherNotes from './pages/TeacherNotes';
 import StudentNotes from './pages/StudentNotes';
 import StudentChatbot from './pages/StudentChatbot';
 import TeacherChatbot from './pages/TeacherChatbot';
+import StudentReportAnalysis from './pages/StudentReportAnalysis'; 
+import TeacherProgressReport from './pages/TeacherProgressReport';
 
 import './index.css'
 
@@ -37,6 +39,8 @@ function App() {
         <Route path="/studentNotes" element={<StudentNotes />} />
         <Route path="/studentChatbot" element={<StudentChatbot />} />
         <Route path="/teacherChatbot" element={<TeacherChatbot />} />
+        <Route path="/studentprogress" element={<StudentReportAnalysis />} />
+        <Route path="/teacherprogress" element={<TeacherProgressReport />} />
         {/* <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} /> */}
          <Route path="/teacher-dashboard" element={
