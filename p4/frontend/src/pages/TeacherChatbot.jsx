@@ -117,14 +117,12 @@ const TeacherChatbot = () => {
                 } else if (item.id === 'submissions') {
                   navigate('/teacher-submissions');
                 } else if (item.id === 'videos') {
-                  navigate('/teacher-videos');
+                  navigate('/teacherVideos');
                 } else if (item.id === 'resources') {
-                  navigate('/teacher-resources');
+                  navigate('/teacherNotes');
                 } else if (item.id === 'reports') {
-                  navigate('/teacher-reports');
-                } else if (item.id === 'class') {
-                  navigate('/teacher-class');
-                } else {
+                  navigate('/teacherprogress');
+                }else {
                   setActiveSection(item.id);
                 }
               }}

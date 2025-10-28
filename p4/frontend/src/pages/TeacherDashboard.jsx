@@ -85,7 +85,6 @@ const TeacherDashboard = () => {
     { id: 'notes', icon: FileTextIcon, label: 'Upload Notes / Resources' },
     { id: 'reports', icon: BarChart3, label: 'Student Progress Reports' },
     { id: 'chat', icon: MessageCircle, label: 'Chat with Students (AI)' },
-    { id: 'class', icon: Users, label: 'Class Management' },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
 
@@ -1039,50 +1038,6 @@ const TeacherDashboard = () => {
       )}
     </div>
   );
-  const renderClass = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Class Management</h2>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600">
-          <Plus className="w-4 h-4" />
-          Add New Class
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { name: 'Grade 10A', subject: 'Mathematics', students: 25, active: 22 },
-          { name: 'Grade 9B', subject: 'Science', students: 28, active: 26 },
-          { name: 'Grade 11C', subject: 'History', students: 20, active: 18 }
-        ].map((classInfo, index) => (
-          <div key={index} className="bg-white p-6 rounded-xl shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">{classInfo.name}</h3>
-              <span className="text-sm text-gray-500">{classInfo.subject}</span>
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Students:</span>
-                <span className="font-medium">{classInfo.students}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Active Today:</span>
-                <span className="font-medium text-green-600">{classInfo.active}</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                Manage Students
-              </button>
-              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   const renderSettings = () => (
     <div className="space-y-6">
@@ -1141,7 +1096,6 @@ const TeacherDashboard = () => {
       case 'notes': navigate('/teacherNotes');break;
       case 'reports':navigate('/teacherProgress');break;
       case 'chat':navigate('/teacherChatbot');break;
-      case 'class': return renderClass();
       case 'settings': return renderSettings();
       default: return renderDashboard();
     }

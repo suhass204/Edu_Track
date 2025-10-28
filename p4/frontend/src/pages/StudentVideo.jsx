@@ -12,11 +12,12 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  PlayCircle
+  PlayCircle,
+  Sparkles
 } from 'lucide-react';
 
 const StudentVideo = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [activeSection] = useState('videos');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [studentData, setStudentData] = useState(null);
@@ -25,6 +26,10 @@ const StudentVideo = () => {
   const [grade, setGrade] = useState('');
   const [subject, setSubject] = useState('');
   const [videos, setVideos] = useState([]);
+  
+  // New recommendation functionality
+  const [recommendedVideos, setRecommendedVideos] = useState([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -36,37 +41,63 @@ const StudentVideo = () => {
   ];
 
   const navigateToSection = (sectionId) => {
-  switch (sectionId) {
-    case 'dashboard':
-      navigate('/student-dashboard');
-      break;
-    case 'quizzes':
-      navigate('/quizzes');
-      break;
-    case 'videos':
-      navigate('/studentVideos');
-      break;
-    case 'resources':
-      navigate('/studentNotes');
-      break; 
-    case 'chatbot':
-      navigate('/studentChatbot');
-      break;
+    switch (sectionId) {
+      case 'dashboard':
+        navigate('/student-dashboard');
+        break;
+      case 'quizzes':
+        navigate('/quizzes');
+        break;
+      case 'videos':
+        navigate('/studentVideos');
+        break;
+      case 'resources':
+        navigate('/studentNotes');
+        break; 
+      case 'chatbot':
+        navigate('/studentChatbot');
+        break;
       case 'progress':
-      navigate('/studentprogress');
-      break;     
-    default:
-      break;
-  }
-};
+        navigate('/studentprogress');
+        break;     
+      default:
+        break;
+    }
+  };
 
   const fetchVideos = async () => {
     try {
       const res = await fetch(`http://localhost:5000/api/student/videos?grade=${grade}&subject=${subject}`);
       const data = await res.json();
       setVideos(data);
+      
+      // Fetch recommendations after loading videos
+      if (grade && subject) {
+        fetchRecommendations(grade, subject);
+      }
     } catch (err) {
       alert("Failed to fetch videos");
+    }
+  };
+
+  const fetchRecommendations = async (selectedGrade, selectedSubject) => {
+    setLoadingRecommendations(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/videos/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grade: selectedGrade,
+          subject: selectedSubject,
+        }),
+      });
+      const data = await res.json();
+      setRecommendedVideos(data.videos || []);
+    } catch (err) {
+      console.error("Failed to fetch recommendations:", err);
+      setRecommendedVideos([]);
+    } finally {
+      setLoadingRecommendations(false);
     }
   };
 
@@ -233,6 +264,71 @@ const StudentVideo = () => {
                   <h3 className="text-xl font-bold text-gray-600">No Videos Yet</h3>
                   <p className="text-gray-500">Enter your grade and subject to load videos.</p>
                 </div>
+              </div>
+            )}
+
+            {/* Recommended for You Section */}
+            {videos.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-6 h-6 text-purple-500" />
+                  <h2 className="text-2xl font-bold text-gray-800">Recommended for You</h2>
+                </div>
+
+                {loadingRecommendations ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading recommendations...</p>
+                    </div>
+                  </div>
+                ) : recommendedVideos.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {recommendedVideos.map(video => {
+                      const embedUrl = getYouTubeEmbedUrl(video.url);
+                      return (
+                        <div key={video._id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                          <div className="bg-gradient-to-r from-purple-400 to-pink-400 p-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-bold text-white text-lg">{video.title}</h3>
+                              <Sparkles className="w-5 h-5 text-white" />
+                            </div>
+                          </div>
+                          
+                          {embedUrl && (
+                            <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                              <iframe
+                                className="absolute top-0 left-0 w-full h-full"
+                                src={embedUrl}
+                                title={video.title}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="p-4">
+                            <p className="text-gray-600 mb-3">{video.description}</p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-purple-100 text-purple-700 px-3 py-2 rounded-lg flex items-center justify-center gap-2">
+                                <PlayCircle className="w-4 h-4" />
+                                <span className="font-medium">Watch Now</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-center">
+                      <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-bold text-gray-600">No Recommendations Available</h3>
+                      <p className="text-gray-500">We'll show personalized recommendations here.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
