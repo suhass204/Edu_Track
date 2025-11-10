@@ -78,11 +78,11 @@ const StudentReportAnalysis = () => {
     if (itemId === 'dashboard') {
       navigate("/student-dashboard");
     } else if (itemId === 'quizzes') {
-      navigate("quizzes");
+      navigate("/quizzes");
     } else if(itemId === 'videos') {
       navigate('/studentVideos');
     } else if(itemId === 'chatbot') {
-      navigate("studentChatbot");
+      navigate("/studentChatbot");
     } else if(itemId === 'resources') {
       navigate('/studentNotes');   
     } else {
