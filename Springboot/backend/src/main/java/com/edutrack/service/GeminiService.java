@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,6 +19,8 @@ import java.util.regex.Pattern;
 @Service
 public class GeminiService {
 
+    // Gemini responses can take longer than the shared RestTemplate's 2s timeout (tuned for
+    // the recommender's fast-fallback behavior), so this client gets its own longer timeout.
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -27,8 +30,11 @@ public class GeminiService {
     @Value("${edutrack.gemini.model}")
     private String model;
 
-    public GeminiService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public GeminiService() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(20000);
+        this.restTemplate = new RestTemplate(factory);
     }
 
     public String generate(String prompt) {
