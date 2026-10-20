@@ -92,6 +92,14 @@ public class AuthService {
         return teacherRepository.findById(teacherId).orElse(null);
     }
 
+    public Teacher updateTeacher(String teacherId, String name, List<String> subjects) {
+        Teacher teacher = teacherRepository.findById(teacherId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Teacher not found"));
+        if (name != null && !name.isBlank()) teacher.setName(name);
+        if (subjects != null) teacher.setSubjects(subjects);
+        return teacherRepository.save(teacher);
+    }
+
     public Student getStudent(String studentId) {
         return studentRepository.findById(studentId).orElse(null);
     }

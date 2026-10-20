@@ -1,6 +1,7 @@
 // src/components/TeacherNotes.js
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import {
   Home,
   FileText,
@@ -22,6 +23,7 @@ import {
 import { API_BASE_URL } from '../config/api';
 
 const TeacherNotes = () => {
+  const navigate = useNavigate();
   const [activeSection] = useState('resources');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
@@ -76,6 +78,30 @@ const TeacherNotes = () => {
     setMessage('');
   };
 
+  const navigateToSection = (sectionId) => {
+    switch (sectionId) {
+      case 'dashboard':
+      case 'quizzes':
+      case 'submissions':
+        navigate('/teacher-dashboard');
+        break;
+      case 'videos':
+        navigate('/teacherVideos');
+        break;
+      case 'resources':
+        navigate('/teacherNotes');
+        break;
+      case 'reports':
+        navigate('/teacherprogress');
+        break;
+      case 'chat':
+        navigate('/teacherChatbot');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -93,7 +119,7 @@ const TeacherNotes = () => {
           {sidebarItems.map(item => (
             <button
               key={item.id}
-              onClick={() => {}}
+              onClick={() => navigateToSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 activeSection === item.id
                   ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
@@ -139,7 +165,7 @@ const TeacherNotes = () => {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">radha</p>
+                    <p className="font-medium text-gray-800">{localStorage.getItem('teacherName') || 'Teacher'}</p>
                     <p className="text-sm text-gray-600">Teacher</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -157,7 +183,7 @@ const TeacherNotes = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button onClick={() => { localStorage.removeItem('teacherId'); localStorage.removeItem('teacherName'); navigate('/teacher'); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>
