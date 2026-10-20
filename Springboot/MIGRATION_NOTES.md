@@ -22,11 +22,11 @@ All prefixed as in p4 (`/api/...`). No role-based auth middleware existed in p4 
 | Method | Path | Request Body | Response |
 |---|---|---|---|
 | POST | /api/setup-admin | {username,password} | {msg} |
-| POST | /api/admin-login | {username,password} | {success} |
+| POST | /api/admin-login | {email,password} | {success} |
 | POST | /api/add-teacher | {username,password,name,email,subjects?} | {success,message,teacher{_id,username,name,email,subjects}} |
 | POST | /api/add-student | {username,password,name,email,grade,subjects?} | {success,message,student{_id,username,name,email,grade,subjects}} |
-| POST | /api/teacher-login | {username,password} | {success,teacher{...}} |
-| POST | /api/student-login | {username,password} | {success,student{...}} |
+| POST | /api/teacher-login | {email,password} | {success,teacher{...}} |
+| POST | /api/student-login | {email,password} | {success,student{...}} |
 | GET  | /api/user/teacher/:teacherId | - | {success,teacher{...}} (teacherId = email) |
 | GET  | /api/user/student/:studentId | - | {success,student{...}} (studentId = email) |
 | POST | /api/teacher/add-video | {title,description,url,grade,subject,addedBy} | {message,video} |
@@ -77,3 +77,29 @@ Backend's `/api/videos/recommend` calls this service (`RECOMMENDER_URL`), 2s tim
 Backend: MONGODB_URI, JWT_SECRET, ALLOWED_ORIGINS, RECOMMENDER_URL, GEMINI_API_KEY, PORT
 Recommender: MONGODB_URI, PORT, REC_WEIGHT_CONTENT, REC_WEIGHT_PROFILE, REC_WEIGHT_POPULARITY, REC_WEIGHT_RECENCY
 Frontend: VITE_API_URL (build-time)
+
+## Post-launch fixes (per user feedback, after initial migration)
+
+- Login for admin/teacher/student switched from username to **email** (the primary identifier /
+  document _id), per explicit request. Username is still stored (signup still collects it, used
+  for display) but is no longer the login key. Admin login credentials are therefore now
+  `admin123@gmail.com` / `admin123` (not `admin`).
+- Added two server-side grade-enforcement endpoints so a student can never fetch another grade's
+  content by crafting a URL: `GET /api/notes/student/{studentId}` and
+  `GET /api/student/{studentId}/videos?subject=` both resolve the grade from the student's own DB
+  record, ignoring any client-supplied grade. The student-facing frontend pages (quizzes, notes,
+  videos) were switched to use these and no longer expose a grade picker.
+- Fixed a real logout bug: `logout(); navigate(path)` raced against `ProtectedRoute`'s own
+  `<Navigate to="/">` redirect (triggered by the auth-context state change), so the explicit
+  navigate frequently lost the race and logout always landed on Home instead of the login page.
+  Fixed with a hard redirect (`window.location.href`) on logout, which sidesteps the race
+  entirely.
+- Fixed `AuthContext` to rehydrate `userType`/`user` from localStorage on load (useState lazy
+  initializer) — previously a page refresh or direct link to a protected route always bounced an
+  already-logged-in user to Home, since the in-memory context state reset on reload.
+- Wired up all previously-decorative sidebar "Logout" buttons (teacher and student portals) and
+  made the "EduTrack"/"EduTrack Teacher" header logo clickable to the user's own dashboard.
+- Fixed `AddCredentials.jsx`'s "Back to Admin" link, which pointed at itself (`/admin/add`)
+  instead of the admin login page (`/admin`).
+- Replaced `StudentDashboard.jsx`'s hardcoded dashboard stats (fake quiz/video/progress numbers)
+  with live data derived from the student's actual quizzes and progress records.

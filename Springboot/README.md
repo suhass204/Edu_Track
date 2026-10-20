@@ -31,7 +31,7 @@ npm run dev
 ```
 
 Default admin (seeded automatically on backend startup): `admin123@gmail.com` / `admin123`
-(login uses the `username` field, which is `admin`).
+(login is by **email**, not username).
 
 ## Env vars
 

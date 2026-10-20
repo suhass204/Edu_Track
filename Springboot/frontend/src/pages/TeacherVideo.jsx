@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -18,9 +18,11 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 
 const TeacherVideo = () => {
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const [activeSection] = useState('videos');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [formData, setFormData] = useState({
@@ -106,7 +108,7 @@ const TeacherVideo = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
               <div className="p-6">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/teacher-dashboard')}>
                   <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-2 rounded-lg">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
@@ -181,7 +183,7 @@ const TeacherVideo = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button onClick={() => { localStorage.removeItem('teacherId'); localStorage.removeItem('teacherName'); navigate('/teacher'); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button onClick={() => { logout(); window.location.href = '/teacher'; }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>

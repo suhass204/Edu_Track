@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -16,18 +16,20 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 
 const StudentQuizDashboard = () => {
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const [activeSection, setActiveSection] = useState('quizzes');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
-  const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [studentAnswers, setStudentAnswers] = useState({});
   const [studentId, setStudentId] = useState('');
   const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [quizStartTime, setQuizStartTime] = useState(null);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -42,6 +44,7 @@ const StudentQuizDashboard = () => {
     const storedId = localStorage.getItem('studentId');
     if (storedId) {
       setStudentId(storedId);
+      fetchMyQuizzes(storedId);
     }
     fetchStudentData();
   }, []);
@@ -60,24 +63,19 @@ const StudentQuizDashboard = () => {
     }
   };
 
-  const fetchQuizzesByGrade = async (grade) => {
+  // Grade is resolved server-side from the student's own record (not a client-supplied
+  // value), so a student can never browse quizzes from a different grade.
+  const fetchMyQuizzes = async (id) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/quiz/grade/${grade}`);
+      const response = await fetch(`${API_BASE_URL}/api/quiz/student/${id}`);
       const data = await response.json();
       if (data.success) setQuizzes(data.quizzes);
     } catch (err) {
-      console.error('Error fetching quizzes by grade:', err);
+      console.error('Error fetching quizzes:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGradeChange = (e) => {
-    const grade = e.target.value;
-    setSelectedGrade(grade);
-    setSelectedQuiz(null);
-    fetchQuizzesByGrade(grade);
   };
 
   const handleStartQuiz = async (quiz) => {
@@ -95,6 +93,7 @@ const StudentQuizDashboard = () => {
       }
       setSelectedQuiz(data.quiz);
       setStudentAnswers({});
+      setQuizStartTime(Date.now());
     } catch (e) {
       alert('Failed to start quiz');
     }
@@ -123,7 +122,7 @@ const StudentQuizDashboard = () => {
           studentId,
           quizId: selectedQuiz._id,
           answers,
-          timeTaken: 120, // Example static time
+          timeTaken: quizStartTime ? Math.max(1, Math.round((Date.now() - quizStartTime) / 60000)) : null,
         }),
       }
     );
@@ -172,18 +171,27 @@ const StudentQuizDashboard = () => {
 
 
   const handleNavigation = (itemId) => {
-    if (itemId === 'dashboard') {
-      // In a real app, this would navigate to dashboard
-      // For now, just show a message or redirect logic
-      navigate("/student-dashboard");
-    } else if (itemId === 'quizzes') {
-      // Stay on current page
-      setActiveSection('quizzes');
-    } else if(itemId === 'videos') {
-      // For other sections, set the active section
-      navigate('/studentVideos');
-    }else{
-      setActiveSection(itemId);
+    switch (itemId) {
+      case 'dashboard':
+        navigate('/student-dashboard');
+        break;
+      case 'quizzes':
+        setActiveSection('quizzes');
+        break;
+      case 'videos':
+        navigate('/studentVideos');
+        break;
+      case 'resources':
+        navigate('/studentNotes');
+        break;
+      case 'chatbot':
+        navigate('/studentChatbot');
+        break;
+      case 'progress':
+        navigate('/studentprogress');
+        break;
+      default:
+        setActiveSection(itemId);
     }
   };
 
@@ -193,22 +201,9 @@ const StudentQuizDashboard = () => {
         <div className="space-y-6">
           <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-2xl">
             <h2 className="text-2xl font-bold mb-2">Student Quizzes 🎯</h2>
-            <p className="opacity-90">Select your grade to view available quizzes and assignments</p>
-          </div>
-
-          {/* Grade Dropdown */}
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h3 className="font-bold text-gray-800 mb-4">Select Grade Level</h3>
-            <select 
-              value={selectedGrade} 
-              onChange={handleGradeChange} 
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">Choose your grade...</option>
-              {[...Array(12)].map((_, i) => (
-                <option key={i} value={i + 1}>Grade {i + 1}</option>
-              ))}
-            </select>
+            <p className="opacity-90">
+              {studentData?.grade ? `Quizzes available for Grade ${studentData.grade}` : 'Quizzes and assignments for your grade'}
+            </p>
           </div>
 
           {/* Quiz List */}
@@ -255,9 +250,9 @@ const StudentQuizDashboard = () => {
                 </div>
               ))}
             </div>
-          ) : selectedGrade && (
+          ) : (
             <div className="bg-white p-6 rounded-xl shadow-lg text-center">
-              <div className="text-gray-500 mb-2">No quizzes available for Grade {selectedGrade}</div>
+              <div className="text-gray-500 mb-2">No quizzes available right now</div>
               <p className="text-sm text-gray-400">Check back later for new assignments</p>
             </div>
           )}
@@ -365,7 +360,7 @@ const StudentQuizDashboard = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/student-dashboard')}>
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
@@ -434,7 +429,7 @@ const StudentQuizDashboard = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600" onClick={() => { logout(); window.location.href = '/student'; }}>
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>

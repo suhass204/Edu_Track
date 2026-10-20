@@ -20,7 +20,7 @@ import img3 from '../assets/img3.png';
 import { API_BASE_URL } from '../config/api';
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,16 +30,16 @@ const AdminLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!username || !password) {
-      setError('Please enter both username and password');
+
+    if (!email || !password) {
+      setError('Please enter both email and password');
       return;
     }
 
     try {
       setIsLoading(true);
       const res = await axios.post(`${API_BASE_URL}/api/admin-login`, {
-        username,
+        email,
         password,
       });
 
@@ -103,18 +103,18 @@ const AdminLogin = () => {
 
           {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
-            {/* Username Field */}
+            {/* Email Field */}
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Admin Username</label>
+              <label className="block text-gray-700 font-medium mb-2">Admin Email</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Shield className="w-5 h-5 text-gray-400" />
                 </div>
                 <input
-                  type="text"
-                  placeholder="Enter admin username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  placeholder="Enter admin email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
                   disabled={isLoading}
                 />

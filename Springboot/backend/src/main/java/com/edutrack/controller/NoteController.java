@@ -31,4 +31,10 @@ public class NoteController {
     public List<Note> byGrade(@PathVariable String grade) {
         return noteService.byGrade(grade);
     }
+
+    /** Grade is resolved server-side from the student's own record, not from client input. */
+    @GetMapping("/student/{studentId}")
+    public List<Note> byStudent(@PathVariable String studentId) {
+        return noteService.byStudent(studentId);
+    }
 }

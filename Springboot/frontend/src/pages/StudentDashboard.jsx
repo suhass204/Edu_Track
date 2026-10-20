@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -23,9 +23,11 @@ import {
   Send
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 
 const EduTrackDashboard = () => {
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -35,6 +37,7 @@ const EduTrackDashboard = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progressReports, setProgressReports] = useState([]);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -60,8 +63,7 @@ const EduTrackDashboard = () => {
       setLoading(true);
       const studentId = localStorage.getItem('studentId');
       if (!studentId) {
-        console.error('No studentId in localStorage. Redirecting to login.');
-        navigate('/student-login');
+        navigate('/student');
         return;
       }
       const response = await fetch(`${API_BASE_URL}/api/quiz/student/${studentId}`);
@@ -79,10 +81,6 @@ const EduTrackDashboard = () => {
     }
   };
 
-  const handleStartQuiz = (quizId) => {
-    navigate(`/quiz/${quizId}`);
-  };
-
   const fetchStudentData = async () => {
     try {
       const studentId = localStorage.getItem('studentId');
@@ -97,12 +95,32 @@ const EduTrackDashboard = () => {
     }
   };
 
+  const fetchProgress = async () => {
+    try {
+      const studentId = localStorage.getItem('studentId');
+      if (!studentId) return;
+      const response = await fetch(`${API_BASE_URL}/api/progress/${studentId}`);
+      const data = await response.json();
+      if (data.success) setProgressReports(data.data);
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    }
+  };
+
   useEffect(() => {
     fetchStudentData();
-    if (activeSection === 'quizzes') {
-      fetchQuizzes();
-    }
-  }, [activeSection]);
+    fetchQuizzes();
+    fetchProgress();
+  }, []);
+
+  // Live stats derived from the student's actual quizzes/progress - no fake numbers.
+  const now = new Date();
+  const submittedQuizIds = new Set(quizzes.filter(q => (q.submissions || []).some(s => s.studentId === localStorage.getItem('studentId'))).map(q => q._id));
+  const pendingQuizzes = quizzes.filter(q => !submittedQuizIds.has(q._id) && new Date(q.deadline) > now);
+  const nextDueQuiz = [...pendingQuizzes].sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
+  const averageScore = progressReports.length > 0
+    ? Math.round(progressReports.reduce((sum, r) => sum + (r.score || 0), 0) / progressReports.length)
+    : null;
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -117,10 +135,12 @@ const EduTrackDashboard = () => {
             <div className="bg-orange-100 p-3 rounded-lg">
               <FileText className="w-6 h-6 text-orange-600" />
             </div>
-            <span className="text-orange-600 text-sm font-medium">Due Tomorrow</span>
+            <span className="text-orange-600 text-sm font-medium">{pendingQuizzes.length > 0 ? 'Pending' : 'None'}</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">Science Quiz</h3>
-          <p className="text-sm text-gray-600">Chemistry: Acids & Bases</p>
+          <h3 className="font-bold text-gray-800 mb-2">{nextDueQuiz ? nextDueQuiz.title : 'No Quizzes Due'}</h3>
+          <p className="text-sm text-gray-600">
+            {nextDueQuiz ? `${nextDueQuiz.subject} • Due ${new Date(nextDueQuiz.deadline).toLocaleDateString()}` : `${pendingQuizzes.length} quizzes pending`}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg border border-green-100">
@@ -128,10 +148,10 @@ const EduTrackDashboard = () => {
             <div className="bg-green-100 p-3 rounded-lg">
               <Play className="w-6 h-6 text-green-600" />
             </div>
-            <span className="text-green-600 text-sm font-medium">Recommended</span>
+            <span className="text-green-600 text-sm font-medium">Available</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">Algebra Basics</h3>
-          <p className="text-sm text-gray-600">15 min • Mathematics</p>
+          <h3 className="font-bold text-gray-800 mb-2">{quizzes.length} Quiz{quizzes.length !== 1 ? 'zes' : ''}</h3>
+          <p className="text-sm text-gray-600">For Grade {studentData?.grade ?? '-'}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg border border-purple-100">
@@ -141,7 +161,7 @@ const EduTrackDashboard = () => {
             </div>
             <span className="text-purple-600 text-sm font-medium">Progress</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">65% Complete</h3>
+          <h3 className="font-bold text-gray-800 mb-2">{averageScore !== null ? `${averageScore}% Average` : 'No Data Yet'}</h3>
           <p className="text-sm text-gray-600">Quiz Performance</p>
         </div>
       </div>
@@ -436,7 +456,7 @@ const EduTrackDashboard = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/student-dashboard')}>
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
@@ -480,7 +500,9 @@ const EduTrackDashboard = () => {
             <div className="flex items-center gap-4">
               <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+                {pendingQuizzes.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{pendingQuizzes.length}</span>
+                )}
               </button>
 
               <div className="relative">
@@ -510,7 +532,7 @@ const EduTrackDashboard = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600" onClick={() => { logout(); window.location.href = '/student'; }}>
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>

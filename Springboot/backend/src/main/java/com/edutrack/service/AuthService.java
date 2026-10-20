@@ -31,17 +31,18 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public Map<String, Object> setupAdmin(String username, String password) {
-        if (adminRepository.findByUsername(username).isPresent()) {
+    public Map<String, Object> setupAdmin(String email, String username, String password) {
+        if (adminRepository.findById(email).isPresent()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Admin already exists");
         }
-        Admin admin = new Admin(username, username, passwordEncoder.encode(password));
+        Admin admin = new Admin(email, username, passwordEncoder.encode(password));
         adminRepository.save(admin);
         return Map.of("msg", "Admin created");
     }
 
-    public boolean adminLogin(String username, String password) {
-        return adminRepository.findByUsername(username)
+    // Login is by email (the primary identifier / document _id), not username.
+    public boolean adminLogin(String email, String password) {
+        return adminRepository.findById(email)
             .map(a -> passwordEncoder.matches(password, a.getPassword()))
             .orElse(false);
     }
@@ -75,15 +76,15 @@ public class AuthService {
         return studentRepository.save(student);
     }
 
-    public Teacher teacherLogin(String username, String password) {
-        Teacher teacher = teacherRepository.findByUsername(username)
+    // Email is the document _id for teachers/students, so login-by-email is a direct lookup.
+    public Teacher teacherLogin(String email, String password) {
+        return teacherRepository.findById(email)
             .filter(t -> passwordEncoder.matches(password, t.getPassword()))
             .orElse(null);
-        return teacher;
     }
 
-    public Student studentLogin(String username, String password) {
-        return studentRepository.findByUsername(username)
+    public Student studentLogin(String email, String password) {
+        return studentRepository.findById(email)
             .filter(s -> passwordEncoder.matches(password, s.getPassword()))
             .orElse(null);
     }

@@ -1,5 +1,5 @@
 // src/components/StudentNotes.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -17,14 +17,16 @@ import {
   Download
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 
 const StudentNotes = () => {
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const [activeSection] = useState('resources');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
-  const [grade, setGrade] = useState('');
   const [notes, setNotes] = useState([]);
+  const [studentData, setStudentData] = useState(null);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -60,22 +62,35 @@ const StudentNotes = () => {
     }
   };
 
-  const fetchNotes = async (grade) => {
+  // Grade is resolved server-side from the student's own record, so a student can never
+  // browse another grade's notes.
+  const fetchMyNotes = async (studentId) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/notes/grade/${grade}`);
+      const res = await axios.get(`${API_BASE_URL}/api/notes/student/${studentId}`);
       setNotes(res.data);
     } catch (err) {
       console.error('Error fetching notes', err);
     }
   };
 
-  useEffect(() => {
-    if (grade) {
-      fetchNotes(grade);
-    } else {
-      setNotes([]);
+  const fetchStudentData = async (studentId) => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/user/student/${studentId}`);
+      if (res.data.success) setStudentData(res.data.student);
+    } catch (err) {
+      console.error('Error fetching student data', err);
     }
-  }, [grade]);
+  };
+
+  useEffect(() => {
+    const studentId = localStorage.getItem('studentId');
+    if (!studentId) {
+      navigate('/student');
+      return;
+    }
+    fetchStudentData(studentId);
+    fetchMyNotes(studentId);
+  }, []);
 
   const getCleanFilename = (filename) => {
     return filename.replace(/^\d+-\d+-/, '');
@@ -86,7 +101,7 @@ const StudentNotes = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/student-dashboard')}>
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
@@ -137,8 +152,8 @@ const StudentNotes = () => {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">Student</p>
-                    <p className="text-sm text-gray-600">Grade</p>
+                    <p className="font-medium text-gray-800">{(studentData && studentData.name) || localStorage.getItem('studentName') || 'Student'}</p>
+                    <p className="text-sm text-gray-600">{studentData?.grade ? `Grade ${studentData.grade}` : 'Grade'}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />
                 </button>
@@ -155,7 +170,7 @@ const StudentNotes = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600" onClick={() => { logout(); window.location.href = '/student'; }}>
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>
@@ -170,23 +185,11 @@ const StudentNotes = () => {
         {/* Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-6">
-            {/* Grade Selection Section */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-              <h3 className="font-bold text-gray-800 mb-4 text-xl">Select Your Grade</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 col-span-2"
-                >
-                  <option value="">Select Grade</option>
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
-                </select>
-              </div>
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-2xl">
+              <h2 className="text-2xl font-bold mb-2">Notes & Resources 📚</h2>
+              <p className="opacity-90">
+                {studentData?.grade ? `Showing notes for Grade ${studentData.grade}` : 'Showing notes for your grade'}
+              </p>
             </div>
 
             {/* Notes List */}
@@ -223,14 +226,8 @@ const StudentNotes = () => {
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-600">
-                    {grade ? 'No Notes Available' : 'No Grade Selected'}
-                  </h3>
-                  <p className="text-gray-500">
-                    {grade 
-                      ? 'No notes available for this grade yet.' 
-                      : 'Please select your grade to view available notes.'}
-                  </p>
+                  <h3 className="text-xl font-bold text-gray-600">No Notes Available</h3>
+                  <p className="text-gray-500">No notes have been uploaded for your grade yet.</p>
                 </div>
               </div>
             )}
