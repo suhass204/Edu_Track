@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -18,9 +18,11 @@ import {
   Award
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 
 const StudentReportAnalysis = () => {
     const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const [activeSection, setActiveSection] = useState('progress');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [studentId, setStudentId] = useState('');
@@ -221,7 +223,7 @@ const StudentReportAnalysis = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/student-dashboard')}>
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
@@ -290,7 +292,7 @@ const StudentReportAnalysis = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600" onClick={() => { logout(); window.location.href = '/student'; }}>
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>

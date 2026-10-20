@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -16,17 +16,19 @@ import {
   Sparkles
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 
 const StudentVideo = () => {
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   const [activeSection] = useState('videos');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [studentData, setStudentData] = useState(null);
   
   // Original functionality
-  const [grade, setGrade] = useState('');
   const [subject, setSubject] = useState('');
   const [videos, setVideos] = useState([]);
+  const [studentId, setStudentId] = useState('');
   
   // New recommendation functionality
   const [recommendedVideos, setRecommendedVideos] = useState([]);
@@ -66,29 +68,45 @@ const StudentVideo = () => {
     }
   };
 
+  useEffect(() => {
+    const id = localStorage.getItem('studentId');
+    if (!id) {
+      navigate('/student');
+      return;
+    }
+    setStudentId(id);
+    fetch(`${API_BASE_URL}/api/user/student/${id}`)
+      .then(res => res.json())
+      .then(data => { if (data.success) setStudentData(data.student); })
+      .catch(err => console.error('Error fetching student data:', err));
+  }, []);
+
+  // Grade is resolved server-side from the student's own record, so a student can never
+  // browse another grade's videos.
   const fetchVideos = async () => {
+    if (!studentId) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/student/videos?grade=${grade}&subject=${subject}`);
+      const res = await fetch(`${API_BASE_URL}/api/student/${studentId}/videos?subject=${encodeURIComponent(subject)}`);
       const data = await res.json();
       setVideos(data);
-      
-      // Fetch recommendations after loading videos
-      if (grade && subject) {
-        fetchRecommendations(grade, subject);
+
+      if (subject) {
+        fetchRecommendations(subject);
       }
     } catch (err) {
       alert("Failed to fetch videos");
     }
   };
 
-  const fetchRecommendations = async (selectedGrade, selectedSubject) => {
+  const fetchRecommendations = async (selectedSubject) => {
     setLoadingRecommendations(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/videos/recommend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          grade: selectedGrade,
+          studentId,
+          grade: studentData?.grade != null ? String(studentData.grade) : undefined,
           subject: selectedSubject,
         }),
       });
@@ -112,7 +130,7 @@ const StudentVideo = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/student-dashboard')}>
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
@@ -163,8 +181,8 @@ const StudentVideo = () => {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">Student</p>
-                    <p className="text-sm text-gray-600">Grade</p>
+                    <p className="font-medium text-gray-800">{(studentData && studentData.name) || localStorage.getItem('studentName') || 'Student'}</p>
+                    <p className="text-sm text-gray-600">{studentData?.grade ? `Grade ${studentData.grade}` : 'Grade'}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />
                 </button>
@@ -181,7 +199,7 @@ const StudentVideo = () => {
                         Settings
                       </button>
                       <hr className="my-2" />
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left text-red-600" onClick={() => { logout(); window.location.href = '/student'; }}>
                         <LogOut className="w-4 h-4" />
                         Logout
                       </button>
@@ -198,21 +216,20 @@ const StudentVideo = () => {
           <div className="space-y-6">
             {/* Search Section */}
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-              <h3 className="font-bold text-gray-800 mb-4 text-xl">Find Videos by Grade & Subject</h3>
+              <h3 className="font-bold text-gray-800 mb-4 text-xl">Find Videos for Your Grade</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input 
-                  placeholder="Enter Grade" 
-                  value={grade} 
-                  onChange={e => setGrade(e.target.value)} 
+                <input
+                  disabled
+                  value={studentData?.grade ? `Grade ${studentData.grade}` : 'Loading...'}
+                  className="px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+                />
+                <input
+                  placeholder="Enter Subject"
+                  value={subject}
+                  onChange={e => setSubject(e.target.value)}
                   className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                <input 
-                  placeholder="Enter Subject" 
-                  value={subject} 
-                  onChange={e => setSubject(e.target.value)} 
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button 
+                <button
                   onClick={fetchVideos} 
                   className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 font-medium transition-all flex items-center justify-center gap-2"
                 >
@@ -263,7 +280,7 @@ const StudentVideo = () => {
                 <div className="text-center">
                   <Play className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-600">No Videos Yet</h3>
-                  <p className="text-gray-500">Enter your grade and subject to load videos.</p>
+                  <p className="text-gray-500">Enter a subject and click Load Videos to see videos for your grade.</p>
                 </div>
               </div>
             )}

@@ -22,12 +22,12 @@ public class AuthController {
 
     @PostMapping("/setup-admin")
     public ResponseEntity<Map<String, Object>> setupAdmin(@RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(authService.setupAdmin(body.get("username"), body.get("password")));
+        return ResponseEntity.ok(authService.setupAdmin(body.get("email"), body.get("username"), body.get("password")));
     }
 
     @PostMapping("/admin-login")
     public ResponseEntity<Map<String, Object>> adminLogin(@RequestBody Map<String, String> body) {
-        boolean ok = authService.adminLogin(body.get("username"), body.get("password"));
+        boolean ok = authService.adminLogin(body.get("email"), body.get("password"));
         if (ok) return ResponseEntity.ok(Map.of("success", true));
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false));
     }
@@ -63,7 +63,7 @@ public class AuthController {
 
     @PostMapping("/teacher-login")
     public ResponseEntity<Map<String, Object>> teacherLogin(@RequestBody Map<String, String> body) {
-        Teacher teacher = authService.teacherLogin(body.get("username"), body.get("password"));
+        Teacher teacher = authService.teacherLogin(body.get("email"), body.get("password"));
         if (teacher == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "error", "Invalid credentials"));
         }
@@ -72,7 +72,7 @@ public class AuthController {
 
     @PostMapping("/student-login")
     public ResponseEntity<Map<String, Object>> studentLogin(@RequestBody Map<String, String> body) {
-        Student student = authService.studentLogin(body.get("username"), body.get("password"));
+        Student student = authService.studentLogin(body.get("email"), body.get("password"));
         if (student == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "error", "Invalid credentials"));
         }

@@ -43,7 +43,11 @@ const QuizTaking = () => {
 
   const fetchQuiz = async () => {
     try {
-      const studentId = localStorage.getItem('studentId') || '507f1f77bcf86cd799439012'; // Default student ID
+      const studentId = localStorage.getItem('studentId');
+      if (!studentId) {
+        navigate('/student');
+        return;
+      }
       const response = await fetch(`${API_BASE_URL}/api/quiz/${quizId}?studentId=${studentId}`);
       const data = await response.json();
       
@@ -70,7 +74,7 @@ const QuizTaking = () => {
 
   const handleSubmit = async () => {
     try {
-      const studentId = localStorage.getItem('studentId') || '507f1f77bcf86cd799439012';
+      const studentId = localStorage.getItem('studentId');
       const answersArray = Object.keys(answers).map(questionIndex => ({
         questionIndex: parseInt(questionIndex),
         selectedAnswer: answers[questionIndex]

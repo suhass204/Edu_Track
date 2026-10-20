@@ -112,11 +112,11 @@ const AddCredentials = () => {
             <h1 className="text-xl font-bold text-gray-800 lg:hidden">EduTrack</h1>
           </div>
           <Link
-            to="/admin/add"
+            to="/admin"
             className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Admin</span>
+            <span>Back to Admin Login</span>
           </Link>
         </div>
 
