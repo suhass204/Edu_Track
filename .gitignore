@@ -1,0 +1,31 @@
+# Secrets - never commit
+.env
+*.env
+!*.env.example
+atlas-credentials.env
+
+# Node
+node_modules/
+dist/
+build/
+
+# Java / Maven
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
