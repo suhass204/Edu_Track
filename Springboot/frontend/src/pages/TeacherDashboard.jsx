@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -77,6 +77,23 @@ const TeacherDashboard = () => {
   const [selectedStudentSubmission, setSelectedStudentSubmission] = useState(null);
   const [progressData, setProgressData] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: '', subjects: '' });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    'New student submissions': true,
+    'Quiz deadline reminders': true,
+    'Student messages': true,
+    'System updates': true
+  });
+
+  const teacherId = localStorage.getItem('teacherId');
+
+  useEffect(() => {
+    if (!teacherId) {
+      navigate('/teacher');
+    }
+  }, [teacherId, navigate]);
 
   const sidebarItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -108,9 +125,10 @@ const TeacherDashboard = () => {
         },
         body: JSON.stringify({
           ...quizForm,
+          grade: parseInt(quizForm.grade, 10),
           questions: questions,
           numberOfQuestions: questions.length,
-          teacherId: '507f1f77bcf86cd799439011' // Default teacher ID
+          teacherId
         }),
       });
 
@@ -204,8 +222,9 @@ const TeacherDashboard = () => {
   };
 
   const fetchQuizzes = async () => {
+    if (!teacherId) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/quiz/teacher/507f1f77bcf86cd799439011`);
+      const response = await fetch(`${API_BASE_URL}/api/quiz/teacher/${teacherId}`);
       const data = await response.json();
       if (data.success) {
         setQuizzes(data.quizzes);
@@ -243,9 +262,9 @@ const TeacherDashboard = () => {
   };
 
   const fetchProgressData = async (grade = 'All Classes') => {
+    if (!teacherId) return;
     try {
       setLoadingProgress(true);
-      const teacherId = localStorage.getItem('teacherId') || '507f1f77bcf86cd799439011'; // Use actual teacher ID or fallback
       const url = grade === 'All Classes'
         ? `${API_BASE_URL}/api/quiz/teacher/${teacherId}/progress`
         : `${API_BASE_URL}/api/quiz/teacher/${teacherId}/progress?grade=${grade}`;
@@ -287,11 +306,16 @@ const TeacherDashboard = () => {
   };
 
   const fetchTeacherData = async () => {
+    if (!teacherId) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/teacher/507f1f77bcf86cd799439011`);
+      const response = await fetch(`${API_BASE_URL}/api/user/teacher/${teacherId}`);
       const data = await response.json();
       if (data.success) {
         setTeacherData(data.teacher);
+        setProfileForm({
+          name: data.teacher.name || '',
+          subjects: (data.teacher.subjects || []).join(', ')
+        });
       }
     } catch (error) {
       console.error('Error fetching teacher data:', error);
@@ -312,6 +336,76 @@ const TeacherDashboard = () => {
     }
   }, [selectedClass, activeSection]);
 
+  const handleSaveProfile = async () => {
+    if (!teacherId) return;
+    setProfileSaving(true);
+    setProfileMessage('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/teacher/${teacherId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileForm.name,
+          subjects: profileForm.subjects.split(',').map(s => s.trim()).filter(Boolean)
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTeacherData(data.teacher);
+        localStorage.setItem('teacherName', data.teacher.name || '');
+        setProfileMessage('Profile updated successfully.');
+      } else {
+        setProfileMessage('Failed to update profile: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      setProfileMessage('Failed to update profile: ' + error.message);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const timeAgo = (dateString) => {
+    if (!dateString) return '';
+    const diffMs = Date.now() - new Date(dateString).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
+  // Live dashboard stats derived from quizzes/progress already fetched - no fake numbers.
+  const totalQuizzes = quizzes.length;
+  const totalSubmissions = quizzes.reduce((sum, q) => sum + (q.submissions?.length || 0), 0);
+  const totalStudents = progressData?.classStats?.totalStudents ?? null;
+  const classAverage = progressData?.classStats?.classAverage ?? null;
+  const recentSubmissionsCount = quizzes.reduce((sum, q) => {
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    return sum + (q.submissions || []).filter(s => new Date(s.submittedAt).getTime() >= dayAgo).length;
+  }, 0);
+
+  // Backend submissions only store the student's email id (no populated name/grade), so
+  // resolve display info from the progress data we already fetch.
+  const studentLookup = useMemo(() => {
+    const map = {};
+    (progressData?.allStudents || []).forEach(s => { map[s._id] = s; });
+    return map;
+  }, [progressData]);
+  const studentDisplayName = (studentId) => studentLookup[studentId]?.name || studentId || 'Student';
+  const studentDisplayGrade = (studentId) => studentLookup[studentId]?.grade ?? '';
+
+  // Flatten per-student quiz history (already resolved with names) into a recent-activity feed.
+  const recentActivity = (progressData?.allStudents || [])
+    .flatMap(student => (student.quizzes || []).map(q => ({
+      action: `${student.name} submitted "${q.title}" — ${q.score}%`,
+      time: q.submittedAt,
+      type: 'submission'
+    })))
+    .sort((a, b) => new Date(b.time) - new Date(a.time))
+    .slice(0, 4);
+
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-7 px-4 rounded-lg font-medium">
@@ -327,8 +421,8 @@ const TeacherDashboard = () => {
             </div>
             <span className="text-blue-600 text-sm font-medium">Active</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">12 Quizzes</h3>
-          <p className="text-sm text-gray-600">Created this month</p>
+          <h3 className="font-bold text-gray-800 mb-2">{totalQuizzes} Quiz{totalQuizzes !== 1 ? 'zes' : ''}</h3>
+          <p className="text-sm text-gray-600">Created by you</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg border border-orange-100">
@@ -336,10 +430,10 @@ const TeacherDashboard = () => {
             <div className="bg-orange-100 p-3 rounded-lg">
               <BookMarked className="w-6 h-6 text-orange-600" />
             </div>
-            <span className="text-orange-600 text-sm font-medium">Pending</span>
+            <span className="text-orange-600 text-sm font-medium">{recentSubmissionsCount > 0 ? 'New' : 'None'}</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">5 Submissions</h3>
-          <p className="text-sm text-gray-600">Need grading</p>
+          <h3 className="font-bold text-gray-800 mb-2">{totalSubmissions} Submission{totalSubmissions !== 1 ? 's' : ''}</h3>
+          <p className="text-sm text-gray-600">{recentSubmissionsCount} in the last 24h</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg border border-green-100">
@@ -349,19 +443,19 @@ const TeacherDashboard = () => {
             </div>
             <span className="text-green-600 text-sm font-medium">Active</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">22 Students</h3>
-          <p className="text-sm text-gray-600">Online today</p>
+          <h3 className="font-bold text-gray-800 mb-2">{totalStudents ?? '—'} Students</h3>
+          <p className="text-sm text-gray-600">In your selected classes</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-lg border border-purple-100">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-purple-100 p-3 rounded-lg">
-              <Upload className="w-6 h-6 text-purple-600" />
+              <TrendingUp className="w-6 h-6 text-purple-600" />
             </div>
-            <span className="text-purple-600 text-sm font-medium">Recent</span>
+            <span className="text-purple-600 text-sm font-medium">Average</span>
           </div>
-          <h3 className="font-bold text-gray-800 mb-2">4 Uploads</h3>
-          <p className="text-sm text-gray-600">This week</p>
+          <h3 className="font-bold text-gray-800 mb-2">{classAverage !== null ? `${classAverage}%` : '—'}</h3>
+          <p className="text-sm text-gray-600">Class average score</p>
         </div>
       </div>
 
@@ -372,23 +466,19 @@ const TeacherDashboard = () => {
             Latest Activity
           </h3>
           <div className="space-y-3">
-            {[
-              { action: 'Student Alex submitted Math Quiz', time: '2 min ago', type: 'submission' },
-              { action: 'New message from Student Sarah', time: '15 min ago', type: 'message' },
-              { action: 'Student Mike watched "Algebra Basics"', time: '1 hour ago', type: 'video' },
-              { action: 'Quiz "Science Test" deadline approaching', time: '2 hours ago', type: 'reminder' }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${activity.type === 'submission' ? 'bg-green-500' :
-                    activity.type === 'message' ? 'bg-blue-500' :
-                      activity.type === 'video' ? 'bg-purple-500' : 'bg-orange-500'
-                    }`}></div>
-                  <span className="text-gray-800">{activity.action}</span>
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-gray-500">No student activity yet.</p>
+            ) : (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-gray-800">{activity.action}</span>
+                  </div>
+                  <span className="text-sm text-gray-500">{timeAgo(activity.time)}</span>
                 </div>
-                <span className="text-sm text-gray-500">{activity.time}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -636,7 +726,7 @@ const TeacherDashboard = () => {
                         }`}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </span>
-                      <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                      <button onClick={() => fetchQuizResults(quiz._id)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" title="View submissions">
                         <Eye className="w-4 h-4" />
                       </button>
                       <button onClick={() => startEditQuiz(quiz)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg">
@@ -687,7 +777,7 @@ const TeacherDashboard = () => {
                     {quiz.submissions.map((sub, idx) => (
                       <div key={idx} className="px-4 py-3 flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-800">{sub.studentId?.name || 'Student'}</div>
+                          <div className="font-medium text-gray-800">{studentDisplayName(sub.studentId)}</div>
                           <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()}</div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -704,85 +794,89 @@ const TeacherDashboard = () => {
         )}
       </div>
 
-      {showSubmissionModal && selectedQuizResults && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-xl shadow-xl">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-gray-800">
-                  {selectedQuizResults.title} — {selectedStudentSubmission ? `${selectedStudentSubmission.studentId?.name || 'Student'} Details` : 'All Submissions'}
-                </h3>
-                <p className="text-sm text-gray-600">Grade {selectedQuizResults.grade} • {selectedQuizResults.subject}</p>
-              </div>
-              <button onClick={() => { setShowSubmissionModal(false); setSelectedQuizResults(null); setSelectedStudentSubmission(null); }} className="text-gray-600 hover:text-gray-800">Close</button>
-            </div>
-            <div className="p-4 space-y-6">
-              {selectedStudentSubmission ? (
-                // Show specific student's submission
-                <div className="border border-gray-200 rounded-lg">
-                  <div className="p-4 flex items-center justify-between bg-gray-50">
-                    <div>
-                      <div className="font-semibold text-gray-800">{selectedStudentSubmission.studentId?.name || 'Student'} — Grade {selectedStudentSubmission.studentId?.grade ?? ''}</div>
-                      <div className="text-sm text-gray-500">Submitted {new Date(selectedStudentSubmission.submittedAt).toLocaleString()} • Time Taken: {selectedStudentSubmission.timeTaken ?? '-'} min</div>
-                    </div>
-                    <div className="text-blue-600 font-bold">Score: {selectedStudentSubmission.score}%</div>
-                  </div>
-                  <div className="p-4 space-y-3">
-                    {selectedQuizResults.questions.map((q, qIdx) => {
-                      const answer = selectedStudentSubmission.answers.find(a => a.questionIndex === qIdx);
-                      const isCorrect = answer ? answer.isCorrect : false;
-                      return (
-                        <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                          <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
-                          <div className="mt-1 text-sm">
-                            <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
-                            <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                // Show all submissions (fallback)
-                selectedQuizResults.submissions.length === 0 ? (
-                  <div className="text-gray-500">No submissions.</div>
-                ) : (
-                  selectedQuizResults.submissions.map((sub, sIdx) => (
-                    <div key={sIdx} className="border border-gray-200 rounded-lg">
-                      <div className="p-4 flex items-center justify-between bg-gray-50">
-                        <div>
-                          <div className="font-semibold text-gray-800">{sub.studentId?.name || 'Student'} — Grade {sub.studentId?.grade ?? ''}</div>
-                          <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()} • Time Taken: {sub.timeTaken ?? '-'} min</div>
-                        </div>
-                        <div className="text-blue-600 font-bold">Score: {sub.score}%</div>
-                      </div>
-                      <div className="p-4 space-y-3">
-                        {selectedQuizResults.questions.map((q, qIdx) => {
-                          const answer = sub.answers.find(a => a.questionIndex === qIdx);
-                          const isCorrect = answer ? answer.isCorrect : false;
-                          return (
-                            <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                              <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
-                              <div className="mt-1 text-sm">
-                                <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
-                                <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
+  // Rendered once at the top level (not tied to any single tab) so the Eye/View-details
+  // button works from both the Quizzes and Submissions tabs.
+  const renderSubmissionModal = () => (
+    showSubmissionModal && selectedQuizResults && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-xl shadow-xl">
+          <div className="p-4 border-b flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-gray-800">
+                {selectedQuizResults.title} — {selectedStudentSubmission ? `${studentDisplayName(selectedStudentSubmission.studentId)} Details` : 'All Submissions'}
+              </h3>
+              <p className="text-sm text-gray-600">Grade {selectedQuizResults.grade} • {selectedQuizResults.subject}</p>
+            </div>
+            <button onClick={() => { setShowSubmissionModal(false); setSelectedQuizResults(null); setSelectedStudentSubmission(null); }} className="text-gray-600 hover:text-gray-800">Close</button>
+          </div>
+          <div className="p-4 space-y-6">
+            {selectedStudentSubmission ? (
+              // Show specific student's submission
+              <div className="border border-gray-200 rounded-lg">
+                <div className="p-4 flex items-center justify-between bg-gray-50">
+                  <div>
+                    <div className="font-semibold text-gray-800">{studentDisplayName(selectedStudentSubmission.studentId)} — Grade {studentDisplayGrade(selectedStudentSubmission.studentId)}</div>
+                    <div className="text-sm text-gray-500">Submitted {new Date(selectedStudentSubmission.submittedAt).toLocaleString()} • Time Taken: {selectedStudentSubmission.timeTaken ?? '-'} min</div>
+                  </div>
+                  <div className="text-blue-600 font-bold">Score: {selectedStudentSubmission.score}%</div>
+                </div>
+                <div className="p-4 space-y-3">
+                  {selectedQuizResults.questions.map((q, qIdx) => {
+                    const answer = selectedStudentSubmission.answers.find(a => a.questionIndex === qIdx);
+                    const isCorrect = answer ? answer.isCorrect : false;
+                    return (
+                      <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                        <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
+                        <div className="mt-1 text-sm">
+                          <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
+                          <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              // Show all submissions (fallback)
+              selectedQuizResults.submissions.length === 0 ? (
+                <div className="text-gray-500">No submissions.</div>
+              ) : (
+                selectedQuizResults.submissions.map((sub, sIdx) => (
+                  <div key={sIdx} className="border border-gray-200 rounded-lg">
+                    <div className="p-4 flex items-center justify-between bg-gray-50">
+                      <div>
+                        <div className="font-semibold text-gray-800">{studentDisplayName(sub.studentId)} — Grade {studentDisplayGrade(sub.studentId)}</div>
+                        <div className="text-sm text-gray-500">Submitted {new Date(sub.submittedAt).toLocaleString()} • Time Taken: {sub.timeTaken ?? '-'} min</div>
+                      </div>
+                      <div className="text-blue-600 font-bold">Score: {sub.score}%</div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {selectedQuizResults.questions.map((q, qIdx) => {
+                        const answer = sub.answers.find(a => a.questionIndex === qIdx);
+                        const isCorrect = answer ? answer.isCorrect : false;
+                        return (
+                          <div key={qIdx} className={`p-3 rounded-lg border ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                            <div className="font-medium text-gray-800">Q{qIdx + 1}. {q.question}</div>
+                            <div className="mt-1 text-sm">
+                              <div className="text-gray-700">Correct Answer: <span className="font-semibold">{q.options[q.correctAnswer]}</span></div>
+                              <div className="text-gray-700">Student Answer: <span className="font-semibold">{answer ? q.options[answer.selectedAnswer] : '—'}</span></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  );
 
   const renderReports = () => (
     <div className="space-y-6">
@@ -1049,41 +1143,56 @@ const TeacherDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-            <input type="text" defaultValue="Ms. Sharma" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input
+              type="text"
+              value={profileForm.name}
+              onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <input type="email" defaultValue="ms.sharma@school.edu" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email (login id, not editable)</label>
+            <input type="email" value={teacherData?.email || ''} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Subjects Taught</label>
-            <input type="text" defaultValue="Mathematics, Science" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-            <input type="tel" defaultValue="+1 (555) 123-4567" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subjects Taught (comma separated)</label>
+            <input
+              type="text"
+              value={profileForm.subjects}
+              onChange={(e) => setProfileForm({ ...profileForm, subjects: e.target.value })}
+              placeholder="e.g. Mathematics, Science"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
-        <button className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
-          Save Changes
+        {profileMessage && (
+          <p className={`mt-3 text-sm ${profileMessage.startsWith('Failed') ? 'text-red-600' : 'text-green-600'}`}>{profileMessage}</p>
+        )}
+        <button
+          onClick={handleSaveProfile}
+          disabled={profileSaving}
+          className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+        >
+          {profileSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
 
       <div className="bg-white p-6 rounded-xl shadow-lg">
         <h3 className="font-bold text-gray-800 mb-4">Notification Preferences</h3>
         <div className="space-y-3">
-          {[
-            'New student submissions',
-            'Quiz deadline reminders',
-            'Student messages',
-            'System updates'
-          ].map((pref, index) => (
-            <div key={index} className="flex items-center justify-between">
+          {Object.keys(notificationPrefs).map((pref) => (
+            <div key={pref} className="flex items-center justify-between">
               <span className="text-gray-700">{pref}</span>
-              <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+              <input
+                type="checkbox"
+                checked={notificationPrefs[pref]}
+                onChange={() => setNotificationPrefs(prev => ({ ...prev, [pref]: !prev[pref] }))}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              />
             </div>
           ))}
         </div>
+        <p className="mt-3 text-xs text-gray-400">These preferences are stored locally on this device only.</p>
       </div>
     </div>
   );
@@ -1145,7 +1254,9 @@ const TeacherDashboard = () => {
             <div className="flex items-center gap-4">
               <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">5</span>
+                {recentSubmissionsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{recentSubmissionsCount}</span>
+                )}
               </button>
 
               <div className="relative">
@@ -1190,6 +1301,7 @@ const TeacherDashboard = () => {
         {/* Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
           {renderContent()}
+          {renderSubmissionModal()}
         </main>
       </div>
     </div>
