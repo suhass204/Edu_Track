@@ -114,9 +114,9 @@ const TeacherChatbot = () => {
                 if (item.id === 'dashboard') {
                   navigate('/teacher-dashboard');
                 } else if (item.id === 'quizzes') {
-                  navigate('/teacher-quizzes');
+                  navigate('/teacher-dashboard');
                 } else if (item.id === 'submissions') {
-                  navigate('/teacher-submissions');
+                  navigate('/teacher-dashboard');
                 } else if (item.id === 'videos') {
                   navigate('/teacherVideos');
                 } else if (item.id === 'resources') {
@@ -171,7 +171,7 @@ const TeacherChatbot = () => {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-800">{localStorage.getItem('teacherName') || 'radha'}</p>
+                    <p className="font-medium text-gray-800">{localStorage.getItem('teacherName') || 'Teacher'}</p>
                     <p className="text-sm text-gray-600">Teacher</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-600" />

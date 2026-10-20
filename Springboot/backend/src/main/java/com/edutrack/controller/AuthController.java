@@ -88,6 +88,13 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("success", true, "teacher", AuthService.teacherView(teacher)));
     }
 
+    @SuppressWarnings("unchecked")
+    @PutMapping("/user/teacher/{teacherId}")
+    public ResponseEntity<Map<String, Object>> updateTeacher(@PathVariable String teacherId, @RequestBody Map<String, Object> body) {
+        Teacher teacher = authService.updateTeacher(teacherId, (String) body.get("name"), (List<String>) body.get("subjects"));
+        return ResponseEntity.ok(Map.of("success", true, "teacher", AuthService.teacherView(teacher)));
+    }
+
     @GetMapping("/user/student/{studentId}")
     public ResponseEntity<Map<String, Object>> getStudent(@PathVariable String studentId) {
         Student student = authService.getStudent(studentId);
