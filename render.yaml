@@ -2,7 +2,7 @@ services:
   - type: web
     name: edutrack-api
     runtime: docker
-    rootDir: springboot/backend
+    rootDir: Springboot/backend
     dockerfilePath: ./Dockerfile
     plan: free
     healthCheckPath: /actuator/health
@@ -31,7 +31,7 @@ services:
   - type: web
     name: edutrack-recommender
     runtime: docker
-    rootDir: springboot/recommender
+    rootDir: Springboot/recommender
     dockerfilePath: ./Dockerfile
     plan: free
     healthCheckPath: /health
@@ -52,7 +52,7 @@ services:
   - type: web
     name: edutrack-web
     runtime: static
-    rootDir: springboot/frontend
+    rootDir: Springboot/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
