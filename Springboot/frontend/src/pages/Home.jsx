@@ -378,6 +378,9 @@ const Home = () => {
           <p className="text-center text-gray-600">
             Empowering education through technology • Making learning accessible and engaging for everyone
           </p>
+          <p className="text-center text-gray-500 text-sm mt-4">
+            Created by Shraddha Shenoy, Suhas S, Vidyashree H Shetty, and Santosh Kumar K
+          </p>
         </div>
       </footer>
     </div>
